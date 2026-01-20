@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Non-Stop Run",
+    "slug": "nonstoprun",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "nonstoprun",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#13ec49"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nonstoprun.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "現在地を基点にランニングコースを生成するために位置情報を使用します",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "ランニング中のナビゲーションのために位置情報を使用します"
+      }
+    },
+    "android": {
+      "package": "com.nonstoprun.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#13ec49"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "ランニング中のナビゲーションのために位置情報を使用します"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
