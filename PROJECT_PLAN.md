@@ -19,7 +19,7 @@
 
 ## 2. 現在の状況
 
-**フェーズ**: MVP開発準備完了
+**フェーズ**: MVP開発 - コア機能実装完了
 
 ### 完了項目
 - [x] プロジェクト初期化（Expo SDK 54 + TypeScript）
@@ -30,11 +30,17 @@
 - [x] ホーム画面（コース作成）のUI実装
 - [x] コース選択画面のUI実装
 - [x] ナビゲーション画面のUI実装
+- [x] **Mapbox GL統合**
+- [x] **GraphHopper APIクライアント（モック対応）**
+- [x] **位置情報取得hook（useLocation）**
+- [x] **コース生成サービス**
+- [x] **Zustand Store実装**
 
-### 保留項目（API選択待ち）
-- [ ] 地図表示の実装
-- [ ] 位置情報取得機能
-- [ ] コース生成ロジック
+### 次のステップ
+- [ ] Mapboxトークン設定（実機テスト時）
+- [ ] GraphHopperサーバー構築（ConoHa）
+- [ ] 信号情報取得（OSM Overpass API）
+- [ ] 実機テスト
 
 ---
 
@@ -50,8 +56,10 @@
 状態管理:
   - Zustand
 
-地図API:
-  - 検討中（Google Maps / MapKit / OpenStreetMap）
+地図・ルート生成:
+  - 地図表示: Mapbox GL (@rnmapbox/maps)
+  - ルート生成: GraphHopper (セルフホスト on ConoHa)
+  - 地図データ: OpenStreetMap
 
 UIライブラリ:
   - @expo/vector-icons (Ionicons)
@@ -74,26 +82,59 @@ nonstoprun/
 │   └── navigation.tsx     # ナビゲーション
 ├── src/
 │   ├── components/        # 再利用コンポーネント
-│   ├── screens/           # 画面コンポーネント
-│   ├── hooks/             # カスタムフック
-│   ├── stores/            # Zustand store
-│   ├── services/          # API・外部サービス
-│   ├── utils/             # ヘルパー関数
-│   └── theme/             # テーマ設定
+│   │   └── MapView.tsx    # 地図コンポーネント
+│   ├── hooks/
+│   │   └── useLocation.ts # 位置情報hook
+│   ├── stores/
+│   │   └── appStore.ts    # Zustand store
+│   ├── services/
+│   │   ├── config.ts      # API設定
+│   │   ├── graphhopper.ts # ルート生成API
+│   │   └── courseGenerator.ts # コース生成
+│   ├── types/
+│   │   └── index.ts       # 型定義
+│   └── theme/
+│       └── index.ts       # テーマ設定
 ├── assets/                # 画像・フォント
 ├── docs/                  # ドキュメント
-└── PROJECT_PLAN.md        # この文書
+├── .env.example           # 環境変数テンプレート
+└── PROJECT_PLAN.md
 ```
 
-### カラーパレット（テーマより抽出）
-- **Primary**: `#13ec49` (緑)
-- **Background Light**: `#f6f8f6`
-- **Background Dark**: `#102215`
-- **Slate palette**: テキスト・ボーダー用
+### 環境変数
+```bash
+# .env.example
+EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_token
+EXPO_PUBLIC_GRAPHHOPPER_API_URL=https://your-conoha-server.com/graphhopper
+EXPO_PUBLIC_USE_MOCK_API=true  # 開発中はtrue
+```
 
 ---
 
-## 4. MVP実装ロードマップ
+## 4. 地図API展開計画
+
+### Phase 1: 日本主要都市部
+対応エリア（半径km）:
+- 東京（30km）
+- 大阪（20km）
+- 名古屋（15km）
+- 横浜（15km）
+- 福岡（15km）
+- 札幌（15km）
+- 神戸（10km）
+- 京都（10km）
+
+### Phase 2: 日本全国
+- GraphHopperに日本全域のOSMデータをロード
+- サーバースペック増強が必要
+
+### Phase 3: 全世界対応
+- GraphHopper API（有料版）に移行
+- セルフホストからクラウドAPI版へ
+
+---
+
+## 5. MVP実装ロードマップ
 
 ### Phase 1: 基盤構築 ✅
 - [x] Expo プロジェクト初期化
@@ -107,24 +148,24 @@ nonstoprun/
 - [x] ホーム画面（コース作成）
 - [x] コース選択画面
 - [x] ナビゲーション画面
-- [x] プレースホルダー画面（コミュニティ等）
+- [x] プレースホルダー画面
 
-### Phase 3: コア機能（次のステップ）
-- [ ] 地図APIの選定・実装
-- [ ] 位置情報取得
-- [ ] コース生成ロジック（モック → 実装）
-- [ ] Zustand Store設計
+### Phase 3: コア機能 ✅
+- [x] Mapbox GL統合
+- [x] 位置情報取得
+- [x] GraphHopper APIクライアント
+- [x] コース生成ロジック（モック対応）
+- [x] Zustand Store
 
-### Phase 4: 仕上げ
-- [ ] エラーハンドリング
-- [ ] ローディング状態
+### Phase 4: 仕上げ（進行中）
+- [ ] 実機テスト
+- [ ] エラーハンドリング強化
 - [ ] ダークモード最適化
-- [ ] TypeScriptエラー解消
-- [ ] ビルドテスト
+- [ ] パフォーマンス最適化
 
 ---
 
-## 5. 画面遷移フロー
+## 6. 画面遷移フロー
 
 ```
 [ホーム] ──「コースを探す」──> [コース選択] ──「開始する」──> [ナビゲーション]
@@ -134,12 +175,12 @@ nonstoprun/
 
 ---
 
-## 6. 次のアクション
+## 7. 次のアクション
 
-1. **地図APIの決定**: コスト計算を待って選定
-2. **位置情報hook作成**: `useLocation` カスタムフック
-3. **コース生成service作成**: API呼び出しロジック
-4. **Zustand Store設計**: アプリ状態管理
+1. **Mapboxトークン取得**: https://account.mapbox.com/ でアカウント作成
+2. **GraphHopperサーバー構築**: ConoHaにDockerでデプロイ
+3. **OSMデータ準備**: 日本主要都市のPBFファイル取得
+4. **実機テスト**: iOS Simulatorまたは実機でテスト
 
 ---
 
@@ -148,3 +189,4 @@ nonstoprun/
 | 日付 | 更新内容 |
 |------|----------|
 | 2026-01-20 | 初版作成。MVP開発準備完了 |
+| 2026-01-20 | 地図API統合完了（Mapbox + GraphHopper） |
