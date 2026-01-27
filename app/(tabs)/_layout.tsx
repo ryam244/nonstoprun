@@ -1,22 +1,28 @@
 import { Tabs } from 'expo-router';
 import { useColorScheme, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '@/theme';
 
-type TabIconName = 'compass' | 'people' | 'barbell' | 'calendar' | 'person';
-type TabIconOutlineName = 'compass-outline' | 'people-outline' | 'barbell-outline' | 'calendar-outline' | 'person-outline';
+const PRIMARY_COLOR = '#13ec49';
+const SLATE_400 = '#94a3b8';
+const SLATE_500 = '#64748b';
+const SLATE_200 = '#e2e8f0';
+const SLATE_800 = '#1e293b';
 
-interface TabBarIconProps {
+type IconName = 'compass' | 'compass-outline' | 'people' | 'people-outline' |
+  'barbell' | 'barbell-outline' | 'calendar' | 'calendar-outline' |
+  'person' | 'person-outline';
+
+interface TabIconProps {
   focused: boolean;
-  iconName: TabIconName;
-  outlineIconName: TabIconOutlineName;
+  iconName: IconName;
+  outlineIconName: IconName;
   label: string;
   isDark: boolean;
 }
 
-function TabBarIcon({ focused, iconName, outlineIconName, label, isDark }: TabBarIconProps) {
-  const activeColor = colors.primary;
-  const inactiveColor = isDark ? colors.slate500 : colors.slate400;
+function TabIcon({ focused, iconName, outlineIconName, label, isDark }: TabIconProps) {
+  const activeColor = PRIMARY_COLOR;
+  const inactiveColor = isDark ? SLATE_500 : SLATE_400;
   const color = focused ? activeColor : inactiveColor;
 
   return (
@@ -35,23 +41,19 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const tabBarStyle = {
-    backgroundColor: isDark
-      ? 'rgba(15, 23, 42, 0.95)'
-      : 'rgba(255, 255, 255, 0.95)',
-    borderTopColor: isDark ? colors.slate800 : colors.slate200,
-    borderTopWidth: 1,
-    height: 85,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  };
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle,
+        tabBarStyle: {
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          borderTopColor: isDark ? SLATE_800 : SLATE_200,
+          borderTopWidth: 1,
+          height: 85,
+          paddingTop: 8,
+          paddingBottom: 24,
+        },
       }}
     >
       <Tabs.Screen
@@ -59,7 +61,7 @@ export default function TabLayout() {
         options={{
           title: 'ホーム',
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon
+            <TabIcon
               focused={focused}
               iconName="compass"
               outlineIconName="compass-outline"
@@ -74,7 +76,7 @@ export default function TabLayout() {
         options={{
           title: 'コミュニティ',
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon
+            <TabIcon
               focused={focused}
               iconName="people"
               outlineIconName="people-outline"
@@ -89,7 +91,7 @@ export default function TabLayout() {
         options={{
           title: 'トレーニング',
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon
+            <TabIcon
               focused={focused}
               iconName="barbell"
               outlineIconName="barbell-outline"
@@ -104,7 +106,7 @@ export default function TabLayout() {
         options={{
           title: 'イベント',
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon
+            <TabIcon
               focused={focused}
               iconName="calendar"
               outlineIconName="calendar-outline"
@@ -119,7 +121,7 @@ export default function TabLayout() {
         options={{
           title: 'プロフィール',
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon
+            <TabIcon
               focused={focused}
               iconName="person"
               outlineIconName="person-outline"
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tabLabel: {
-    fontSize: typography.fontSize['2xs'],
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 10,
+    fontWeight: '500',
   },
 });
