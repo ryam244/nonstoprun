@@ -13,12 +13,28 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography, borderRadius, shadows } from '@/theme';
 import { CourseMapView } from '@/components/MapView';
 import { generateCourses, formatDistance, formatTime } from '@/services/courseGenerator';
 import { useAppStore } from '@/stores/appStore';
 import { useLocation } from '@/hooks/useLocation';
 import type { Course } from '@/types';
+
+// Colors
+const PRIMARY = '#13ec49';
+const PRIMARY_MEDIUM = 'rgba(19, 236, 73, 0.2)';
+const BG_LIGHT = '#f6f8f6';
+const BG_DARK = '#102215';
+const WHITE = '#ffffff';
+const SLATE_100 = '#f1f5f9';
+const SLATE_200 = '#e2e8f0';
+const SLATE_300 = '#cbd5e1';
+const SLATE_400 = '#94a3b8';
+const SLATE_500 = '#64748b';
+const SLATE_700 = '#334155';
+const SLATE_800 = '#1e293b';
+const SLATE_900 = '#0f172a';
+const BLUE_500 = '#3b82f6';
+const PURPLE_500 = '#a855f7';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 100;
@@ -38,10 +54,10 @@ export default function CourseSelectScreen() {
     setIsGeneratingCourses,
   } = useAppStore();
 
-  const bgColor = isDark ? colors.backgroundDark : colors.backgroundLight;
-  const textColor = isDark ? colors.white : colors.slate900;
-  const subtextColor = isDark ? colors.slate400 : colors.slate500;
-  const cardBg = isDark ? colors.slate900 : colors.white;
+  const bgColor = isDark ? BG_DARK : BG_LIGHT;
+  const textColor = isDark ? WHITE : SLATE_900;
+  const subtextColor = isDark ? SLATE_400 : SLATE_500;
+  const cardBg = isDark ? SLATE_900 : WHITE;
 
   const targetDistance = params.distance ? parseFloat(params.distance) : 5;
 
@@ -81,9 +97,9 @@ export default function CourseSelectScreen() {
 
   const getBadgeForCourse = (index: number): { text: string; color: string } => {
     const badges = [
-      { text: 'おすすめ', color: colors.primary },
-      { text: '景色が良い', color: colors.blue500 },
-      { text: '最速', color: colors.purple500 },
+      { text: 'おすすめ', color: PRIMARY },
+      { text: '景色が良い', color: BLUE_500 },
+      { text: '最速', color: PURPLE_500 },
     ];
     return badges[index % badges.length];
   };
@@ -126,7 +142,7 @@ export default function CourseSelectScreen() {
         {isGeneratingCourses && (
           <View style={styles.loadingOverlay}>
             <View style={[styles.loadingCard, { backgroundColor: cardBg }]}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <ActivityIndicator size="large" color={PRIMARY} />
               <Text style={[styles.loadingText, { color: textColor }]}>
                 コースを生成中...
               </Text>
@@ -146,11 +162,11 @@ export default function CourseSelectScreen() {
               },
             ]}
           >
-            <Ionicons name="search" size={20} color={colors.primary} />
+            <Ionicons name="search" size={20} color={PRIMARY} />
             <TextInput
               style={[styles.searchInput, { color: textColor }]}
               placeholder="エリアまたは公園を検索..."
-              placeholderTextColor={colors.slate400}
+              placeholderTextColor={SLATE_400}
             />
           </View>
         </View>
@@ -172,31 +188,31 @@ export default function CourseSelectScreen() {
                 styles.zoomButton,
                 {
                   borderBottomWidth: 1,
-                  borderBottomColor: isDark ? colors.slate800 : colors.slate200,
+                  borderBottomColor: isDark ? SLATE_800 : SLATE_200,
                 },
               ]}
             >
               <Ionicons
                 name="add"
                 size={24}
-                color={isDark ? colors.slate300 : colors.slate700}
+                color={isDark ? SLATE_300 : SLATE_700}
               />
             </Pressable>
             <Pressable style={styles.zoomButton}>
               <Ionicons
                 name="remove"
                 size={24}
-                color={isDark ? colors.slate300 : colors.slate700}
+                color={isDark ? SLATE_300 : SLATE_700}
               />
             </Pressable>
           </View>
           <Pressable
-            style={[styles.locationButton, { backgroundColor: cardBg }, shadows.xl]}
+            style={[styles.locationButton, { backgroundColor: cardBg }]}
           >
             <Ionicons
               name="navigate"
               size={24}
-              color={isDark ? colors.slate300 : colors.slate700}
+              color={isDark ? SLATE_300 : SLATE_700}
             />
           </Pressable>
         </View>
@@ -209,7 +225,7 @@ export default function CourseSelectScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.cardsContainer}
-          snapToInterval={CARD_WIDTH + spacing.md}
+          snapToInterval={CARD_WIDTH + 16}
           decelerationRate="fast"
         >
           {courses.map((course, index) => {
@@ -224,8 +240,7 @@ export default function CourseSelectScreen() {
                 style={[
                   styles.courseCard,
                   { backgroundColor: cardBg, width: CARD_WIDTH },
-                  isSelected && { borderWidth: 2, borderColor: colors.primary },
-                  shadows.lg,
+                  isSelected && { borderWidth: 2, borderColor: PRIMARY },
                 ]}
               >
                 <View style={styles.cardHeader}>
@@ -254,7 +269,7 @@ export default function CourseSelectScreen() {
 
                 <View style={styles.statsRow}>
                   <View style={styles.stat}>
-                    <Text style={[styles.statLabel, { color: colors.slate400 }]}>
+                    <Text style={[styles.statLabel, { color: SLATE_400 }]}>
                       距離
                     </Text>
                     <View style={styles.statValue}>
@@ -265,7 +280,7 @@ export default function CourseSelectScreen() {
                     </View>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={[styles.statLabel, { color: colors.slate400 }]}>
+                    <Text style={[styles.statLabel, { color: SLATE_400 }]}>
                       予想時間
                     </Text>
                     <View style={styles.statValue}>
@@ -276,7 +291,7 @@ export default function CourseSelectScreen() {
                     </View>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={[styles.statLabel, { color: colors.slate400 }]}>
+                    <Text style={[styles.statLabel, { color: SLATE_400 }]}>
                       信号
                     </Text>
                     <View style={styles.statValue}>
@@ -285,7 +300,7 @@ export default function CourseSelectScreen() {
                           styles.statText,
                           { color: textColor },
                           course.signalCount === 0 && {
-                            color: colors.primary,
+                            color: PRIMARY,
                             fontWeight: '700',
                           },
                         ]}
@@ -299,10 +314,10 @@ export default function CourseSelectScreen() {
                 <View style={styles.elevationRow}>
                   <View style={[styles.elevationChart, { borderColor: course.color }]} />
                   <View style={styles.elevationLabel}>
-                    <Text style={[styles.statLabel, { color: colors.slate400 }]}>
+                    <Text style={[styles.statLabel, { color: SLATE_400 }]}>
                       高低差
                     </Text>
-                    <Text style={[styles.elevationText, { color: colors.slate400 }]}>
+                    <Text style={[styles.elevationText, { color: SLATE_400 }]}>
                       {Math.round(course.elevationGain)}m
                     </Text>
                   </View>
@@ -316,13 +331,12 @@ export default function CourseSelectScreen() {
         <Pressable
           style={[
             styles.startButton,
-            shadows.primary,
             (!selectedCourseId || isGeneratingCourses) && styles.startButtonDisabled,
           ]}
           onPress={handleStartRun}
           disabled={!selectedCourseId || isGeneratingCourses}
         >
-          <Ionicons name="play" size={24} color={colors.slate900} />
+          <Ionicons name="play" size={24} color={SLATE_900} />
           <Text style={styles.startButtonText}>ランニングを開始する</Text>
         </Pressable>
       </View>
@@ -345,8 +359,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
@@ -355,18 +369,18 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
   },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 18,
+    fontWeight: '700',
   },
   filterButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
   },
   mapContainer: {
     flex: 1,
@@ -382,42 +396,42 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   loadingCard: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.DEFAULT,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 16,
   },
   loadingText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 16,
+    fontWeight: '500',
   },
   searchContainer: {
     position: 'absolute',
     top: 100,
-    left: spacing.md,
+    left: 16,
     right: 60,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
+    fontSize: 14,
   },
   mapControls: {
     position: 'absolute',
     top: 100,
-    right: spacing.md,
-    gap: spacing.sm,
+    right: 16,
+    gap: 12,
   },
   zoomControls: {
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
     overflow: 'hidden',
   },
   zoomButton: {
@@ -429,79 +443,89 @@ const styles = StyleSheet.create({
   locationButton: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: SLATE_900,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
   bottomSheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: spacing.xl,
+    paddingBottom: 32,
   },
   cardsContainer: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.md,
+    paddingHorizontal: 16,
+    gap: 16,
   },
   courseCard: {
-    borderRadius: borderRadius.DEFAULT,
-    padding: spacing.lg,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: SLATE_900,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   badge: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 12,
     paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.xs,
+    borderRadius: 9999,
+    marginBottom: 4,
     alignSelf: 'flex-start',
   },
   badgeText: {
-    fontSize: typography.fontSize['2xs'],
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   courseName: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 18,
+    fontWeight: '700',
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.lg,
-    marginBottom: spacing.md,
+    gap: 24,
+    marginBottom: 16,
   },
   stat: {
     gap: 2,
   },
   statLabel: {
-    fontSize: typography.fontSize['2xs'],
+    fontSize: 10,
   },
   statValue: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
   },
   statText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 14,
+    fontWeight: '500',
   },
   elevationRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: spacing.sm,
+    gap: 12,
   },
   elevationChart: {
     flex: 1,
@@ -512,25 +536,30 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   elevationText: {
-    fontSize: typography.fontSize['2xs'],
+    fontSize: 10,
   },
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 64,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
-    gap: spacing.sm,
+    marginHorizontal: 24,
+    marginTop: 16,
+    backgroundColor: PRIMARY,
+    borderRadius: 9999,
+    gap: 12,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 6,
   },
   startButtonDisabled: {
     opacity: 0.5,
   },
   startButtonText: {
-    color: colors.slate900,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    color: SLATE_900,
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

@@ -7,7 +7,14 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Course, Coordinates } from '../types';
-import { colors, borderRadius, typography, spacing } from '../theme';
+
+// Colors
+const PRIMARY = '#13ec49';
+const WHITE = '#ffffff';
+const SLATE_100 = '#f1f5f9';
+const SLATE_200 = '#e2e8f0';
+const SLATE_500 = '#64748b';
+const SLATE_900 = '#0f172a';
 
 // Mapbox requires native code, so we use a placeholder in Expo Go
 const USE_NATIVE_MAP = false;
@@ -47,7 +54,7 @@ export function CourseMapView({
 
       {/* Center Marker */}
       <View style={styles.centerMarker}>
-        <Ionicons name="location" size={40} color={colors.primary} />
+        <Ionicons name="location" size={40} color={PRIMARY} />
       </View>
 
       {/* Course Preview */}
@@ -64,7 +71,7 @@ export function CourseMapView({
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <Ionicons name="map" size={20} color={colors.slate500} />
+        <Ionicons name="map" size={20} color={SLATE_500} />
         <Text style={styles.infoText}>
           地図プレビュー（モックモード）
         </Text>
@@ -104,7 +111,7 @@ export function NavigationMapView({
         <Ionicons
           name="navigate"
           size={60}
-          color={colors.primary}
+          color={PRIMARY}
           style={{ transform: [{ rotate: `${heading || 0}deg` }] }}
         />
       </View>
@@ -126,10 +133,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     overflow: 'hidden',
-    borderRadius: borderRadius.DEFAULT,
+    borderRadius: 16,
   },
   placeholder: {
-    backgroundColor: colors.slate100,
+    backgroundColor: SLATE_100,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
     left: -100,
     right: -100,
     height: 1,
-    backgroundColor: colors.slate200,
+    backgroundColor: SLATE_200,
   },
   centerMarker: {
     position: 'absolute',
@@ -163,41 +170,41 @@ const styles = StyleSheet.create({
   },
   infoBanner: {
     position: 'absolute',
-    bottom: spacing.lg,
+    bottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    gap: spacing.sm,
-    shadowColor: colors.slate900,
+    backgroundColor: WHITE,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 9999,
+    gap: 12,
+    shadowColor: SLATE_900,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   infoText: {
-    color: colors.slate500,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    color: SLATE_500,
+    fontSize: 14,
+    fontWeight: '500',
   },
   locationInfo: {
     position: 'absolute',
-    top: spacing.md,
+    top: 16,
     backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   locationText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.slate500,
+    fontSize: 12,
+    color: SLATE_500,
     fontFamily: 'monospace',
   },
   navMapBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.slate200,
+    backgroundColor: SLATE_200,
   },
   directionArrow: {
     position: 'absolute',
@@ -207,14 +214,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: PRIMARY,
     borderWidth: 4,
-    borderColor: colors.white,
+    borderColor: WHITE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   positionShadow: {
-    shadowColor: colors.primary,
+    shadowColor: PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -224,7 +231,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.white,
+    backgroundColor: WHITE,
   },
   pathIndicator: {
     position: 'absolute',

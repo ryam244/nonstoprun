@@ -1,20 +1,28 @@
 import { View, Text, StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '@/theme';
+
+const PRIMARY = '#13ec49';
+const PRIMARY_LIGHT = 'rgba(19, 236, 73, 0.1)';
+const BG_LIGHT = '#f6f8f6';
+const BG_DARK = '#102215';
+const WHITE = '#ffffff';
+const SLATE_400 = '#94a3b8';
+const SLATE_500 = '#64748b';
+const SLATE_900 = '#0f172a';
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const bgColor = isDark ? colors.backgroundDark : colors.backgroundLight;
-  const textColor = isDark ? colors.white : colors.slate900;
-  const subtextColor = isDark ? colors.slate400 : colors.slate500;
+  const bgColor = isDark ? BG_DARK : BG_LIGHT;
+  const textColor = isDark ? WHITE : SLATE_900;
+  const subtextColor = isDark ? SLATE_400 : SLATE_500;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="person" size={48} color={colors.primary} />
+          <Ionicons name="person" size={48} color={PRIMARY} />
         </View>
         <Text style={[styles.title, { color: textColor }]}>プロフィール</Text>
         <Text style={[styles.description, { color: subtextColor }]}>
@@ -36,29 +44,29 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: 32,
   },
   iconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: PRIMARY_LIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: 24,
   },
   title: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: spacing.sm,
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
   },
   description: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    marginBottom: spacing.md,
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
   },
   subdescription: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
   },

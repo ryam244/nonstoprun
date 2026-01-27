@@ -8,17 +8,29 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography, borderRadius, shadows } from '@/theme';
+
+// Colors
+const PRIMARY = '#13ec49';
+const PRIMARY_MEDIUM = 'rgba(19, 236, 73, 0.2)';
+const BG_LIGHT = '#f6f8f6';
+const BG_DARK = '#102215';
+const WHITE = '#ffffff';
+const SLATE_100 = '#f1f5f9';
+const SLATE_200 = '#e2e8f0';
+const SLATE_400 = '#94a3b8';
+const SLATE_500 = '#64748b';
+const SLATE_800 = '#1e293b';
+const SLATE_900 = '#0f172a';
 
 export default function NavigationScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const bgColor = isDark ? colors.backgroundDark : colors.backgroundLight;
-  const textColor = isDark ? colors.white : colors.slate900;
-  const subtextColor = isDark ? colors.slate400 : colors.slate500;
-  const cardBg = isDark ? colors.slate900 : colors.white;
-  const borderColor = isDark ? colors.slate800 : colors.slate100;
+  const bgColor = isDark ? BG_DARK : BG_LIGHT;
+  const textColor = isDark ? WHITE : SLATE_900;
+  const subtextColor = isDark ? SLATE_400 : SLATE_500;
+  const cardBg = isDark ? SLATE_900 : WHITE;
+  const borderColor = isDark ? SLATE_800 : SLATE_100;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -33,8 +45,8 @@ export default function NavigationScreen() {
 
       {/* Direction Indicator */}
       <View style={styles.directionContainer}>
-        <View style={[styles.directionIcon, { backgroundColor: colors.primaryMedium }]}>
-          <Ionicons name="arrow-forward" size={80} color={colors.primary} style={{ transform: [{ rotate: '45deg' }] }} />
+        <View style={[styles.directionIcon, { backgroundColor: PRIMARY_MEDIUM }]}>
+          <Ionicons name="arrow-forward" size={80} color={PRIMARY} style={{ transform: [{ rotate: '45deg' }] }} />
         </View>
         <Text style={[styles.distanceText, { color: textColor }]}>300m</Text>
         <Text style={[styles.instructionText, { color: subtextColor }]}>
@@ -44,8 +56,8 @@ export default function NavigationScreen() {
 
       {/* Map Area */}
       <View style={styles.mapArea}>
-        <View style={[styles.mapPlaceholder, { backgroundColor: isDark ? colors.slate800 : colors.slate200 }]}>
-          <View style={[styles.currentPosition, shadows.primary]}>
+        <View style={[styles.mapPlaceholder, { backgroundColor: isDark ? SLATE_800 : SLATE_200 }]}>
+          <View style={styles.currentPosition}>
             <View style={styles.positionDot} />
           </View>
         </View>
@@ -59,7 +71,7 @@ export default function NavigationScreen() {
             <Text style={[styles.statLabel, { color: subtextColor }]}>現在のペース</Text>
           </View>
           <Text style={[styles.statValue, { color: textColor }]}>4'35"</Text>
-          <Text style={[styles.statUnit, { color: colors.slate400 }]}>/km</Text>
+          <Text style={[styles.statUnit, { color: SLATE_400 }]}>/km</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={styles.statHeader}>
@@ -67,26 +79,26 @@ export default function NavigationScreen() {
             <Text style={[styles.statLabel, { color: subtextColor }]}>経過時間</Text>
           </View>
           <Text style={[styles.statValue, { color: textColor }]}>24:12</Text>
-          <Text style={[styles.statUnit, { color: colors.slate400 }]}>計測中</Text>
+          <Text style={[styles.statUnit, { color: SLATE_400 }]}>計測中</Text>
         </View>
       </View>
 
       {/* Transfer Button */}
       <View style={styles.buttonContainer}>
-        <Pressable style={[styles.transferButton, shadows.primary]}>
-          <Ionicons name="sync" size={24} color={colors.slate900} />
+        <Pressable style={styles.transferButton}>
+          <Ionicons name="sync" size={24} color={SLATE_900} />
           <Text style={styles.transferButtonText}>Garmin/Stravaに転送</Text>
         </Pressable>
 
         {/* Status Indicators */}
         <View style={styles.statusRow}>
           <View style={styles.statusItem}>
-            <Ionicons name="cellular" size={16} color={colors.slate400} />
-            <Text style={[styles.statusText, { color: colors.slate400 }]}>GPS 良好</Text>
+            <Ionicons name="cellular" size={16} color={SLATE_400} />
+            <Text style={[styles.statusText, { color: SLATE_400 }]}>GPS 良好</Text>
           </View>
           <View style={styles.statusItem}>
-            <Ionicons name="notifications-off" size={16} color={colors.primary} />
-            <Text style={[styles.statusText, { color: colors.slate400 }]}>前方の信号: 0</Text>
+            <Ionicons name="notifications-off" size={16} color={PRIMARY} />
+            <Text style={[styles.statusText, { color: SLATE_400 }]}>前方の信号: 0</Text>
           </View>
         </View>
       </View>
@@ -102,8 +114,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   backButton: {
     width: 48,
@@ -112,16 +124,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 18,
+    fontWeight: '700',
   },
   headerSpacer: {
     width: 48,
   },
   directionContainer: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
   directionIcon: {
     width: 120,
@@ -129,30 +141,30 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: 24,
   },
   distanceText: {
     fontSize: 40,
-    fontWeight: typography.fontWeight.black,
+    fontWeight: '900',
     letterSpacing: -1,
   },
   instructionText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.medium,
-    marginTop: spacing.xs,
+    fontSize: 20,
+    fontWeight: '500',
+    marginTop: 4,
     textAlign: 'center',
   },
   instructionBold: {
-    fontWeight: typography.fontWeight.bold,
+    fontWeight: '700',
   },
   mapArea: {
     flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   mapPlaceholder: {
     flex: 1,
-    borderRadius: borderRadius.DEFAULT,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -160,80 +172,90 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: PRIMARY,
     borderWidth: 4,
-    borderColor: colors.white,
+    borderColor: WHITE,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 6,
   },
   positionDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.white,
+    backgroundColor: WHITE,
   },
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 16,
   },
   statCard: {
     flex: 1,
-    padding: spacing.lg,
-    borderRadius: borderRadius.DEFAULT,
+    padding: 24,
+    borderRadius: 16,
     borderWidth: 1,
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    gap: 12,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   statValue: {
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.black,
+    fontSize: 30,
+    fontWeight: '900',
     letterSpacing: -1,
   },
   statUnit: {
-    fontSize: typography.fontSize.xs,
+    fontSize: 12,
   },
   buttonContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   transferButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 60,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.full,
-    gap: spacing.sm,
+    backgroundColor: PRIMARY,
+    borderRadius: 9999,
+    gap: 12,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 6,
   },
   transferButtonText: {
-    color: colors.slate900,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    color: SLATE_900,
+    fontSize: 18,
+    fontWeight: '700',
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.lg,
+    paddingHorizontal: 16,
+    marginTop: 24,
   },
   statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
   statusText: {
-    fontSize: typography.fontSize['2xs'],
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
