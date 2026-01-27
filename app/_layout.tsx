@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
-import { colors } from '@/theme';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -14,7 +13,7 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: isDark ? colors.backgroundDark : colors.backgroundLight,
+            backgroundColor: isDark ? '#102215' : '#f6f8f6',
           },
         }}
       >
