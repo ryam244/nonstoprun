@@ -31,6 +31,7 @@ export interface Course {
   signalCount: number;
   difficulty: 'easy' | 'moderate' | 'hard';
   routePoints: RoutePoint[];
+  waypoints?: RoutePoint[]; // For map display (same as routePoints, but separate for flexibility)
   signals: TrafficSignal[];
   color: string; // for map display
   description?: string;
