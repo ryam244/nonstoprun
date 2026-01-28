@@ -15,17 +15,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CourseMapView } from '@/components/MapView';
 import { generateCourses, formatDistance, formatTime } from '@/services/courseGenerator';
+import { fetchTrafficSignals, countSignalsOnRoute } from '@/services/overpassApi';
 import { useAppStore } from '@/stores/appStore';
 import { useLocation } from '@/hooks/useLocation';
-import type { Course } from '@/types';
+import type { Course, TrafficSignal } from '@/types';
 
 // Colors
 const PRIMARY = '#13ec49';
-const PRIMARY_MEDIUM = 'rgba(19, 236, 73, 0.2)';
 const BG_LIGHT = '#f6f8f6';
 const BG_DARK = '#102215';
 const WHITE = '#ffffff';
-const SLATE_100 = '#f1f5f9';
 const SLATE_200 = '#e2e8f0';
 const SLATE_300 = '#cbd5e1';
 const SLATE_400 = '#94a3b8';
@@ -35,6 +34,7 @@ const SLATE_800 = '#1e293b';
 const SLATE_900 = '#0f172a';
 const BLUE_500 = '#3b82f6';
 const PURPLE_500 = '#a855f7';
+const RED_500 = '#ef4444';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 100;
@@ -54,6 +54,10 @@ export default function CourseSelectScreen() {
     setIsGeneratingCourses,
   } = useAppStore();
 
+  // State for traffic signals
+  const [signals, setSignals] = useState<TrafficSignal[]>([]);
+  const [courseSignalCounts, setCourseSignalCounts] = useState<Record<string, number>>({});
+
   const bgColor = isDark ? BG_DARK : BG_LIGHT;
   const textColor = isDark ? WHITE : SLATE_900;
   const subtextColor = isDark ? SLATE_400 : SLATE_500;
@@ -61,20 +65,42 @@ export default function CourseSelectScreen() {
 
   const targetDistance = params.distance ? parseFloat(params.distance) : 5;
 
-  // Generate courses on mount
+  // Fetch signals and generate courses on mount
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadData = async () => {
       setIsGeneratingCourses(true);
 
       const location = currentLocation || getMockLocation();
-      const response = await generateCourses(location, targetDistance);
 
-      setCourses(response.courses);
+      // Fetch traffic signals in parallel with course generation
+      const [response, fetchedSignals] = await Promise.all([
+        generateCourses(location, targetDistance),
+        fetchTrafficSignals(location, targetDistance * 1000), // radius in meters
+      ]);
+
+      setSignals(fetchedSignals);
+
+      // Count signals on each course
+      const signalCounts: Record<string, number> = {};
+      for (const course of response.courses) {
+        if (course.waypoints) {
+          const { count } = countSignalsOnRoute(course.waypoints, fetchedSignals);
+          signalCounts[course.id] = count;
+          // Update course signal count
+          course.signalCount = count;
+        }
+      }
+      setCourseSignalCounts(signalCounts);
+
+      // Sort courses by signal count (fewer = better)
+      const sortedCourses = [...response.courses].sort((a, b) => a.signalCount - b.signalCount);
+
+      setCourses(sortedCourses);
       setIsGeneratingCourses(false);
     };
 
     if (!locationLoading) {
-      loadCourses();
+      loadData();
     }
   }, [targetDistance, currentLocation, locationLoading]);
 
@@ -86,22 +112,20 @@ export default function CourseSelectScreen() {
     setSelectedCourseId(courseId);
   };
 
-  const getIconForCourse = (index: number): 'notifications-off' | 'leaf' | 'speedometer' => {
-    const icons: Array<'notifications-off' | 'leaf' | 'speedometer'> = [
-      'notifications-off',
-      'leaf',
-      'speedometer',
-    ];
-    return icons[index % icons.length];
+  const getIconForCourse = (signalCount: number): 'notifications-off' | 'warning' | 'alert-circle' => {
+    if (signalCount === 0) return 'notifications-off';
+    if (signalCount <= 2) return 'warning';
+    return 'alert-circle';
   };
 
-  const getBadgeForCourse = (index: number): { text: string; color: string } => {
-    const badges = [
-      { text: 'おすすめ', color: PRIMARY },
-      { text: '景色が良い', color: BLUE_500 },
-      { text: '最速', color: PURPLE_500 },
-    ];
-    return badges[index % badges.length];
+  const getBadgeForCourse = (signalCount: number, index: number): { text: string; color: string } => {
+    if (signalCount === 0) {
+      return { text: 'ノンストップ', color: PRIMARY };
+    }
+    if (signalCount <= 2) {
+      return { text: '信号少なめ', color: BLUE_500 };
+    }
+    return { text: `信号${signalCount}個`, color: PURPLE_500 };
   };
 
   return (
@@ -135,6 +159,7 @@ export default function CourseSelectScreen() {
           courses={courses}
           selectedCourseId={selectedCourseId}
           showUserLocation={true}
+          signals={signals}
           style={styles.map}
         />
 
@@ -146,7 +171,20 @@ export default function CourseSelectScreen() {
               <Text style={[styles.loadingText, { color: textColor }]}>
                 コースを生成中...
               </Text>
+              <Text style={[styles.loadingSubtext, { color: subtextColor }]}>
+                信号情報を取得しています
+              </Text>
             </View>
+          </View>
+        )}
+
+        {/* Signal Count Badge */}
+        {signals.length > 0 && !isGeneratingCourses && (
+          <View style={styles.signalBadge}>
+            <View style={styles.signalDot} />
+            <Text style={styles.signalBadgeText}>
+              周辺の信号: {signals.length}個
+            </Text>
           </View>
         )}
 
@@ -230,8 +268,9 @@ export default function CourseSelectScreen() {
         >
           {courses.map((course, index) => {
             const isSelected = course.id === selectedCourseId;
-            const badge = getBadgeForCourse(index);
-            const icon = getIconForCourse(index);
+            const signalCount = courseSignalCounts[course.id] ?? course.signalCount;
+            const badge = getBadgeForCourse(signalCount, index);
+            const icon = getIconForCourse(signalCount);
 
             return (
               <Pressable
@@ -260,10 +299,14 @@ export default function CourseSelectScreen() {
                   <View
                     style={[
                       styles.iconContainer,
-                      { backgroundColor: `${course.color}20` },
+                      { backgroundColor: signalCount === 0 ? `${PRIMARY}20` : `${RED_500}20` },
                     ]}
                   >
-                    <Ionicons name={icon} size={24} color={course.color} />
+                    <Ionicons
+                      name={icon}
+                      size={24}
+                      color={signalCount === 0 ? PRIMARY : RED_500}
+                    />
                   </View>
                 </View>
 
@@ -299,13 +342,13 @@ export default function CourseSelectScreen() {
                         style={[
                           styles.statText,
                           { color: textColor },
-                          course.signalCount === 0 && {
+                          signalCount === 0 && {
                             color: PRIMARY,
                             fontWeight: '700',
                           },
                         ]}
                       >
-                        {course.signalCount} 基
+                        {signalCount} 個
                       </Text>
                     </View>
                   </View>
@@ -400,15 +443,41 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     borderRadius: 16,
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   loadingText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    fontSize: 12,
+  },
+  signalBadge: {
+    position: 'absolute',
+    top: 100,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    gap: 6,
+  },
+  signalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: WHITE,
+  },
+  signalBadgeText: {
+    color: WHITE,
+    fontSize: 12,
+    fontWeight: '700',
   },
   searchContainer: {
     position: 'absolute',
-    top: 100,
+    top: 140,
     left: 16,
     right: 60,
   },
@@ -426,7 +495,7 @@ const styles = StyleSheet.create({
   },
   mapControls: {
     position: 'absolute',
-    top: 100,
+    top: 140,
     right: 16,
     gap: 12,
   },

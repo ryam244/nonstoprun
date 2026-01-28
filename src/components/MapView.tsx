@@ -4,17 +4,15 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapboxGL from '@rnmapbox/maps';
-import type { Course, Coordinates } from '../types';
+import type { Course, Coordinates, TrafficSignal } from '../types';
 
 // Colors
 const PRIMARY = '#13ec49';
 const WHITE = '#ffffff';
-const SLATE_100 = '#f1f5f9';
-const SLATE_200 = '#e2e8f0';
-const SLATE_500 = '#64748b';
+const RED = '#ef4444';
 const SLATE_900 = '#0f172a';
 
 // Initialize Mapbox with access token
@@ -27,6 +25,7 @@ interface MapViewProps {
   courses?: Course[];
   selectedCourseId?: string | null;
   showUserLocation?: boolean;
+  signals?: TrafficSignal[];
   onCourseSelect?: (courseId: string) => void;
   style?: object;
 }
@@ -37,6 +36,7 @@ export function CourseMapView({
   courses = [],
   selectedCourseId,
   showUserLocation = true,
+  signals = [],
   style,
 }: MapViewProps) {
   const cameraRef = useRef<MapboxGL.Camera>(null);
@@ -79,6 +79,28 @@ export function CourseMapView({
     };
   };
 
+  // Generate GeoJSON for traffic signals
+  const generateSignalsGeoJSON = () => {
+    if (signals.length === 0) return null;
+
+    return {
+      type: 'FeatureCollection' as const,
+      features: signals.map((signal, index) => ({
+        type: 'Feature' as const,
+        id: `signal-${index}`,
+        properties: {
+          type: signal.type,
+        },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [signal.location.longitude, signal.location.latitude],
+        },
+      })),
+    };
+  };
+
+  const signalsGeoJSON = generateSignalsGeoJSON();
+
   return (
     <View style={[styles.container, style]}>
       <MapboxGL.MapView
@@ -104,6 +126,22 @@ export function CourseMapView({
             showsUserHeadingIndicator={true}
             renderMode="native"
           />
+        )}
+
+        {/* Traffic Signals */}
+        {signalsGeoJSON && (
+          <MapboxGL.ShapeSource id="signals" shape={signalsGeoJSON}>
+            <MapboxGL.CircleLayer
+              id="signals-circle"
+              style={{
+                circleRadius: 8,
+                circleColor: RED,
+                circleOpacity: 0.9,
+                circleStrokeWidth: 2,
+                circleStrokeColor: WHITE,
+              }}
+            />
+          </MapboxGL.ShapeSource>
         )}
 
         {/* Course Routes */}
@@ -157,11 +195,13 @@ export function NavigationMapView({
   center,
   course,
   heading = 0,
+  signals = [],
   style,
 }: {
   center?: Coordinates;
   course?: Course;
   heading?: number;
+  signals?: TrafficSignal[];
   style?: object;
 }) {
   const cameraRef = useRef<MapboxGL.Camera>(null);
@@ -199,6 +239,26 @@ export function NavigationMapView({
     };
   };
 
+  // Generate GeoJSON for traffic signals
+  const generateSignalsGeoJSON = () => {
+    if (signals.length === 0) return null;
+
+    return {
+      type: 'FeatureCollection' as const,
+      features: signals.map((signal, index) => ({
+        type: 'Feature' as const,
+        id: `signal-${index}`,
+        properties: {},
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [signal.location.longitude, signal.location.latitude],
+        },
+      })),
+    };
+  };
+
+  const signalsGeoJSON = generateSignalsGeoJSON();
+
   return (
     <View style={[styles.container, style]}>
       <MapboxGL.MapView
@@ -227,6 +287,22 @@ export function NavigationMapView({
           showsUserHeadingIndicator={true}
           renderMode="native"
         />
+
+        {/* Traffic Signals */}
+        {signalsGeoJSON && (
+          <MapboxGL.ShapeSource id="nav-signals" shape={signalsGeoJSON}>
+            <MapboxGL.CircleLayer
+              id="nav-signals-circle"
+              style={{
+                circleRadius: 10,
+                circleColor: RED,
+                circleOpacity: 0.9,
+                circleStrokeWidth: 2,
+                circleStrokeColor: WHITE,
+              }}
+            />
+          </MapboxGL.ShapeSource>
+        )}
 
         {/* Course Route */}
         {course && (
