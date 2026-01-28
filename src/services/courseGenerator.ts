@@ -1,33 +1,42 @@
 /**
  * Course Generator Service
  * Generates multiple running courses with different characteristics
+ * Uses Mapbox Directions API for route generation
  */
 
-import { generateRoute, convertToCourse } from './graphhopper';
-import { isLocationSupported } from './config';
+import {
+  generateMapboxRoute,
+  convertMapboxToCourse,
+  generateMockMapboxRoute
+} from './mapboxDirections';
+import { USE_MOCK_API, isLocationSupported } from './config';
 import type { Coordinates, Course, CourseResponse } from '../types';
-import { colors } from '../theme';
+
+// Colors (inline to avoid theme import issues)
+const PRIMARY = '#13ec49';
+const BLUE_500 = '#3b82f6';
+const PURPLE_500 = '#a855f7';
 
 // Course types with different characteristics
 const COURSE_TYPES = [
   {
     id: 'fast',
     name: '最速コース',
-    color: colors.primary,
+    color: PRIMARY,
     description: '信号が最も少ないルート',
     angleOffset: 0,
   },
   {
     id: 'scenic',
     name: '景観コース',
-    color: colors.blue500,
+    color: BLUE_500,
     description: '公園や川沿いを通るルート',
     angleOffset: Math.PI / 4, // 45 degrees offset
   },
   {
     id: 'balanced',
     name: 'バランスコース',
-    color: colors.purple500,
+    color: PURPLE_500,
     description: '距離と景観のバランス',
     angleOffset: -Math.PI / 4, // -45 degrees offset
   },
@@ -44,21 +53,28 @@ export async function generateCourses(
   const supported = isLocationSupported(startPoint.latitude, startPoint.longitude);
 
   if (!supported) {
-    // Return mock courses with a warning
     console.warn('Location not in supported area, using mock data');
   }
 
   const courses: Course[] = [];
 
   // Generate courses in parallel
-  const coursePromises = COURSE_TYPES.map(async (type, index) => {
+  const coursePromises = COURSE_TYPES.map(async (type) => {
     // Slightly adjust the route for variety
     const adjustedStart = adjustStartPoint(startPoint, type.angleOffset, 0.1);
 
-    const routeResponse = await generateRoute(adjustedStart, targetDistanceKm);
+    let routeResponse;
+
+    if (USE_MOCK_API) {
+      // Use mock data for development
+      routeResponse = generateMockMapboxRoute(adjustedStart, targetDistanceKm);
+    } else {
+      // Use real Mapbox Directions API
+      routeResponse = await generateMapboxRoute(adjustedStart, targetDistanceKm);
+    }
 
     if (routeResponse) {
-      return convertToCourse(
+      return convertMapboxToCourse(
         routeResponse,
         `course_${type.id}_${Date.now()}`,
         type.name,
