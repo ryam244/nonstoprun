@@ -124,7 +124,6 @@ export function CourseMapView({
           <MapboxGL.UserLocation
             visible={true}
             showsUserHeadingIndicator={true}
-            renderMode="native"
           />
         )}
 
@@ -285,7 +284,6 @@ export function NavigationMapView({
         <MapboxGL.UserLocation
           visible={true}
           showsUserHeadingIndicator={true}
-          renderMode="native"
         />
 
         {/* Traffic Signals */}

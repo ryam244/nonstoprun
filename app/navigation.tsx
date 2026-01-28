@@ -1,9 +1,16 @@
+/**
+ * Navigation Screen
+ * Real-time running navigation with timer and stats
+ */
+
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   useColorScheme,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -11,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationMapView } from '@/components/MapView';
 import { useLocation } from '@/hooks/useLocation';
 import { useAppStore } from '@/stores/appStore';
+import { saveRunRecord, formatPace, formatDuration } from '@/services/runHistory';
+import type { Coordinates } from '@/types';
 
 // Colors
 const PRIMARY = '#13ec49';
@@ -23,16 +32,23 @@ const SLATE_400 = '#94a3b8';
 const SLATE_500 = '#64748b';
 const SLATE_800 = '#1e293b';
 const SLATE_900 = '#0f172a';
+const RED_500 = '#ef4444';
 
 export default function NavigationScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const { current: currentLocation, getMockLocation } = useLocation();
-  const { courses, selectedCourseId } = useAppStore();
+  const { courses, selectedCourseId, isRunning, setIsRunning, setRunStartTime } = useAppStore();
 
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
   const location = currentLocation || getMockLocation();
+
+  // Timer state
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [currentPace, setCurrentPace] = useState(0);
+  const [routeHistory, setRouteHistory] = useState<Coordinates[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const bgColor = isDark ? BG_DARK : BG_LIGHT;
   const textColor = isDark ? WHITE : SLATE_900;
@@ -40,29 +56,151 @@ export default function NavigationScreen() {
   const cardBg = isDark ? SLATE_900 : WHITE;
   const borderColor = isDark ? SLATE_800 : SLATE_100;
 
+  // Start timer on mount
+  useEffect(() => {
+    if (!isRunning) {
+      setIsRunning(true);
+      setRunStartTime(Date.now());
+    }
+
+    timerRef.current = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Track route history
+  useEffect(() => {
+    if (currentLocation) {
+      setRouteHistory((prev) => [...prev, currentLocation]);
+    }
+  }, [currentLocation]);
+
+  // Calculate pace (simulated)
+  useEffect(() => {
+    if (selectedCourse && elapsedTime > 0) {
+      // Simulate pace based on expected time
+      const progress = Math.min(elapsedTime / selectedCourse.estimatedTime, 1);
+      const coveredDistance = selectedCourse.distance * progress;
+      if (coveredDistance > 0) {
+        const paceSecondsPerKm = elapsedTime / (coveredDistance / 1000);
+        setCurrentPace(paceSecondsPerKm);
+      }
+    }
+  }, [elapsedTime, selectedCourse]);
+
+  const handleEndRun = useCallback(async () => {
+    Alert.alert(
+      'ランニングを終了',
+      '本当にランニングを終了しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '終了する',
+          style: 'destructive',
+          onPress: async () => {
+            // Stop timer
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            setIsRunning(false);
+
+            // Save run record
+            if (selectedCourse) {
+              try {
+                const record = await saveRunRecord(
+                  selectedCourse,
+                  elapsedTime,
+                  routeHistory
+                );
+                // Navigate to result screen
+                router.replace({
+                  pathname: '/result',
+                  params: { runId: record.id },
+                });
+              } catch (error) {
+                console.error('Failed to save run:', error);
+                Alert.alert('エラー', '記録の保存に失敗しました');
+                router.replace('/');
+              }
+            } else {
+              router.replace('/');
+            }
+          },
+        },
+      ]
+    );
+  }, [selectedCourse, elapsedTime, routeHistory]);
+
+  const handleBack = () => {
+    Alert.alert(
+      '戻る',
+      'ランニングを中断しますか？記録は保存されません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '中断する',
+          style: 'destructive',
+          onPress: () => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            setIsRunning(false);
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
+  // Calculate progress
+  const progress = selectedCourse
+    ? Math.min(elapsedTime / selectedCourse.estimatedTime, 1)
+    : 0;
+  const remainingDistance = selectedCourse
+    ? Math.max(selectedCourse.distance * (1 - progress), 0)
+    : 0;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable style={styles.backButton} onPress={handleBack}>
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: textColor }]}>ランニング中</Text>
+        <View style={styles.runningIndicator}>
+          <View style={styles.runningDot} />
+          <Text style={[styles.headerTitle, { color: textColor }]}>ランニング中</Text>
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
       {/* Direction Indicator */}
       <View style={styles.directionContainer}>
         <View style={[styles.directionIcon, { backgroundColor: PRIMARY_MEDIUM }]}>
-          <Ionicons name="arrow-forward" size={80} color={PRIMARY} style={{ transform: [{ rotate: '45deg' }] }} />
+          <Ionicons
+            name="arrow-forward"
+            size={80}
+            color={PRIMARY}
+            style={{ transform: [{ rotate: '45deg' }] }}
+          />
         </View>
-        <Text style={[styles.distanceText, { color: textColor }]}>300m</Text>
+        <Text style={[styles.distanceText, { color: textColor }]}>
+          {remainingDistance >= 1000
+            ? `${(remainingDistance / 1000).toFixed(1)}km`
+            : `${Math.round(remainingDistance)}m`}
+        </Text>
         <Text style={[styles.instructionText, { color: subtextColor }]}>
-          次を<Text style={[styles.instructionBold, { color: textColor }]}>右方向へ</Text> (リバーサイド・パス)
+          残り距離
         </Text>
       </View>
 
-      {/* Map Area - Real Mapbox Map */}
+      {/* Map Area */}
       <View style={styles.mapArea}>
         <NavigationMapView
           center={location}
@@ -79,7 +217,9 @@ export default function NavigationScreen() {
             <Ionicons name="speedometer-outline" size={16} color={subtextColor} />
             <Text style={[styles.statLabel, { color: subtextColor }]}>現在のペース</Text>
           </View>
-          <Text style={[styles.statValue, { color: textColor }]}>4'35"</Text>
+          <Text style={[styles.statValue, { color: textColor }]}>
+            {formatPace(currentPace)}
+          </Text>
           <Text style={[styles.statUnit, { color: SLATE_400 }]}>/km</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: cardBg, borderColor }]}>
@@ -87,22 +227,24 @@ export default function NavigationScreen() {
             <Ionicons name="timer-outline" size={16} color={subtextColor} />
             <Text style={[styles.statLabel, { color: subtextColor }]}>経過時間</Text>
           </View>
-          <Text style={[styles.statValue, { color: textColor }]}>24:12</Text>
+          <Text style={[styles.statValue, { color: textColor }]}>
+            {formatDuration(elapsedTime)}
+          </Text>
           <Text style={[styles.statUnit, { color: SLATE_400 }]}>計測中</Text>
         </View>
       </View>
 
-      {/* Transfer Button */}
+      {/* End Run Button */}
       <View style={styles.buttonContainer}>
-        <Pressable style={styles.transferButton}>
-          <Ionicons name="sync" size={24} color={SLATE_900} />
-          <Text style={styles.transferButtonText}>Garmin/Stravaに転送</Text>
+        <Pressable style={styles.endButton} onPress={handleEndRun}>
+          <Ionicons name="stop" size={24} color={WHITE} />
+          <Text style={styles.endButtonText}>ランニングを終了</Text>
         </Pressable>
 
         {/* Status Indicators */}
         <View style={styles.statusRow}>
           <View style={styles.statusItem}>
-            <Ionicons name="cellular" size={16} color={SLATE_400} />
+            <Ionicons name="cellular" size={16} color={PRIMARY} />
             <Text style={[styles.statusText, { color: SLATE_400 }]}>GPS 良好</Text>
           </View>
           <View style={styles.statusItem}>
@@ -131,6 +273,17 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: 'flex-start',
     justifyContent: 'center',
+  },
+  runningIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  runningDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: RED_500,
   },
   headerTitle: {
     fontSize: 18,
@@ -162,9 +315,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 4,
     textAlign: 'center',
-  },
-  instructionBold: {
-    fontWeight: '700',
   },
   mapArea: {
     flex: 1,
@@ -211,22 +361,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  transferButton: {
+  endButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 56,
-    backgroundColor: PRIMARY,
+    backgroundColor: RED_500,
     borderRadius: 9999,
     gap: 12,
-    shadowColor: PRIMARY,
+    shadowColor: RED_500,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
     elevation: 6,
   },
-  transferButtonText: {
-    color: SLATE_900,
+  endButtonText: {
+    color: WHITE,
     fontSize: 16,
     fontWeight: '700',
   },
