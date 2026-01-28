@@ -1,11 +1,12 @@
 /**
  * MapView Component
- * Displays map placeholder for Expo Go, real map for development builds
+ * Mapbox GL implementation for displaying running courses
  */
 
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MapboxGL from '@rnmapbox/maps';
 import type { Course, Coordinates } from '../types';
 
 // Colors
@@ -16,8 +17,9 @@ const SLATE_200 = '#e2e8f0';
 const SLATE_500 = '#64748b';
 const SLATE_900 = '#0f172a';
 
-// Mapbox requires native code, so we use a placeholder in Expo Go
-const USE_NATIVE_MAP = false;
+// Initialize Mapbox with access token
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+MapboxGL.setAccessToken(MAPBOX_TOKEN);
 
 interface MapViewProps {
   center?: Coordinates;
@@ -31,60 +33,121 @@ interface MapViewProps {
 
 export function CourseMapView({
   center,
+  zoom = 14,
   courses = [],
   selectedCourseId,
+  showUserLocation = true,
   style,
 }: MapViewProps) {
+  const cameraRef = useRef<MapboxGL.Camera>(null);
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
 
+  // Default center (Tokyo Station)
+  const defaultCenter: Coordinates = {
+    latitude: 35.6812,
+    longitude: 139.7671,
+  };
+
+  const mapCenter = center || defaultCenter;
+
+  useEffect(() => {
+    if (cameraRef.current && center) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [center.longitude, center.latitude],
+        zoomLevel: zoom,
+        animationDuration: 500,
+      });
+    }
+  }, [center, zoom]);
+
+  // Generate GeoJSON for course routes
+  const generateRouteGeoJSON = (course: Course) => {
+    if (!course.waypoints || course.waypoints.length < 2) {
+      return null;
+    }
+
+    return {
+      type: 'Feature' as const,
+      properties: {
+        id: course.id,
+        color: course.color,
+      },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: course.waypoints.map((wp) => [wp.longitude, wp.latitude]),
+      },
+    };
+  };
+
   return (
-    <View style={[styles.container, styles.placeholder, style]}>
-      {/* Map Background Pattern */}
-      <View style={styles.mapPattern}>
-        {[...Array(20)].map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.patternLine,
-              { top: i * 30, transform: [{ rotate: '45deg' }] },
-            ]}
+    <View style={[styles.container, style]}>
+      <MapboxGL.MapView
+        style={styles.map}
+        styleURL={MapboxGL.StyleURL.Street}
+        logoEnabled={false}
+        attributionEnabled={false}
+        compassEnabled={true}
+        scaleBarEnabled={false}
+      >
+        <MapboxGL.Camera
+          ref={cameraRef}
+          zoomLevel={zoom}
+          centerCoordinate={[mapCenter.longitude, mapCenter.latitude]}
+          animationMode="flyTo"
+          animationDuration={500}
+        />
+
+        {/* User Location */}
+        {showUserLocation && (
+          <MapboxGL.UserLocation
+            visible={true}
+            showsUserHeadingIndicator={true}
+            renderMode="native"
           />
-        ))}
-      </View>
+        )}
 
-      {/* Center Marker */}
-      <View style={styles.centerMarker}>
-        <Ionicons name="location" size={40} color={PRIMARY} />
-      </View>
+        {/* Course Routes */}
+        {courses.map((course) => {
+          const geoJSON = generateRouteGeoJSON(course);
+          if (!geoJSON) return null;
 
-      {/* Course Preview */}
-      {selectedCourse && (
-        <View style={styles.coursePreview}>
-          <View
-            style={[
-              styles.courseRing,
-              { borderColor: selectedCourse.color },
+          const isSelected = course.id === selectedCourseId;
+
+          return (
+            <MapboxGL.ShapeSource
+              key={course.id}
+              id={`route-${course.id}`}
+              shape={geoJSON}
+            >
+              <MapboxGL.LineLayer
+                id={`route-line-${course.id}`}
+                style={{
+                  lineColor: course.color,
+                  lineWidth: isSelected ? 6 : 4,
+                  lineOpacity: isSelected ? 1 : 0.6,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
+            </MapboxGL.ShapeSource>
+          );
+        })}
+
+        {/* Start/End Marker for selected course */}
+        {selectedCourse && selectedCourse.waypoints && selectedCourse.waypoints.length > 0 && (
+          <MapboxGL.PointAnnotation
+            id="start-point"
+            coordinate={[
+              selectedCourse.waypoints[0].longitude,
+              selectedCourse.waypoints[0].latitude,
             ]}
-          />
-        </View>
-      )}
-
-      {/* Info Banner */}
-      <View style={styles.infoBanner}>
-        <Ionicons name="map" size={20} color={SLATE_500} />
-        <Text style={styles.infoText}>
-          地図プレビュー（モックモード）
-        </Text>
-      </View>
-
-      {/* Location Info */}
-      {center && (
-        <View style={styles.locationInfo}>
-          <Text style={styles.locationText}>
-            {center.latitude.toFixed(4)}, {center.longitude.toFixed(4)}
-          </Text>
-        </View>
-      )}
+          >
+            <View style={styles.startMarker}>
+              <Ionicons name="flag" size={20} color={WHITE} />
+            </View>
+          </MapboxGL.PointAnnotation>
+        )}
+      </MapboxGL.MapView>
     </View>
   );
 }
@@ -93,7 +156,7 @@ export function CourseMapView({
 export function NavigationMapView({
   center,
   course,
-  heading,
+  heading = 0,
   style,
 }: {
   center?: Coordinates;
@@ -101,30 +164,89 @@ export function NavigationMapView({
   heading?: number;
   style?: object;
 }) {
+  const cameraRef = useRef<MapboxGL.Camera>(null);
+
+  const defaultCenter: Coordinates = {
+    latitude: 35.6812,
+    longitude: 139.7671,
+  };
+
+  const mapCenter = center || defaultCenter;
+
+  useEffect(() => {
+    if (cameraRef.current && center) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [center.longitude, center.latitude],
+        zoomLevel: 16,
+        heading: heading,
+        animationDuration: 300,
+      });
+    }
+  }, [center, heading]);
+
+  const generateRouteGeoJSON = (courseData: Course) => {
+    if (!courseData.waypoints || courseData.waypoints.length < 2) {
+      return null;
+    }
+
+    return {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: courseData.waypoints.map((wp) => [wp.longitude, wp.latitude]),
+      },
+    };
+  };
+
   return (
-    <View style={[styles.container, styles.placeholder, style]}>
-      {/* Map Background */}
-      <View style={styles.navMapBg} />
-
-      {/* Direction Arrow */}
-      <View style={styles.directionArrow}>
-        <Ionicons
-          name="navigate"
-          size={60}
-          color={PRIMARY}
-          style={{ transform: [{ rotate: `${heading || 0}deg` }] }}
+    <View style={[styles.container, style]}>
+      <MapboxGL.MapView
+        style={styles.map}
+        styleURL={MapboxGL.StyleURL.Street}
+        logoEnabled={false}
+        attributionEnabled={false}
+        compassEnabled={false}
+        scaleBarEnabled={false}
+        pitchEnabled={false}
+        rotateEnabled={false}
+      >
+        <MapboxGL.Camera
+          ref={cameraRef}
+          zoomLevel={16}
+          centerCoordinate={[mapCenter.longitude, mapCenter.latitude]}
+          heading={heading}
+          pitch={45}
+          animationMode="flyTo"
+          animationDuration={300}
         />
-      </View>
 
-      {/* Current Position */}
-      <View style={[styles.currentPosition, styles.positionShadow]}>
-        <View style={styles.positionDot} />
-      </View>
+        {/* User Location with heading */}
+        <MapboxGL.UserLocation
+          visible={true}
+          showsUserHeadingIndicator={true}
+          renderMode="native"
+        />
 
-      {/* Course Path Indicator */}
-      {course && (
-        <View style={[styles.pathIndicator, { backgroundColor: course.color }]} />
-      )}
+        {/* Course Route */}
+        {course && (
+          <MapboxGL.ShapeSource
+            id="nav-route"
+            shape={generateRouteGeoJSON(course) || undefined}
+          >
+            <MapboxGL.LineLayer
+              id="nav-route-line"
+              style={{
+                lineColor: course.color || PRIMARY,
+                lineWidth: 6,
+                lineOpacity: 0.8,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </MapboxGL.ShapeSource>
+        )}
+      </MapboxGL.MapView>
     </View>
   );
 }
@@ -135,110 +257,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 16,
   },
-  placeholder: {
-    backgroundColor: SLATE_100,
+  map: {
+    flex: 1,
+  },
+  startMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mapPattern: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  patternLine: {
-    position: 'absolute',
-    left: -100,
-    right: -100,
-    height: 1,
-    backgroundColor: SLATE_200,
-  },
-  centerMarker: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coursePreview: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  courseRing: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 4,
-    borderStyle: 'dashed',
-  },
-  infoBanner: {
-    position: 'absolute',
-    bottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: WHITE,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 9999,
-    gap: 12,
+    borderWidth: 3,
+    borderColor: WHITE,
     shadowColor: SLATE_900,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 2,
-  },
-  infoText: {
-    color: SLATE_500,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  locationInfo: {
-    position: 'absolute',
-    top: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  locationText: {
-    fontSize: 12,
-    color: SLATE_500,
-    fontFamily: 'monospace',
-  },
-  navMapBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: SLATE_200,
-  },
-  directionArrow: {
-    position: 'absolute',
-    top: '30%',
-  },
-  currentPosition: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: PRIMARY,
-    borderWidth: 4,
-    borderColor: WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  positionShadow: {
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
     elevation: 4,
-  },
-  positionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: WHITE,
-  },
-  pathIndicator: {
-    position: 'absolute',
-    bottom: 60,
-    width: 100,
-    height: 4,
-    borderRadius: 2,
   },
 });
 

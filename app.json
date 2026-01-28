@@ -16,9 +16,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nonstoprun.app",
+      "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "現在地を基点にランニングコースを生成するために位置情報を使用します",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "ランニング中のナビゲーションのために位置情報を使用します"
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "ランニング中のナビゲーションのために位置情報を使用します",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
@@ -43,6 +45,12 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "ランニング中のナビゲーションのために位置情報を使用します"
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "pk.eyJ1IjoiZGl2bWUiLCJhIjoiY21rdXRsZ3I2MmE0ZjNmb2Zvd2N6eDcyZiJ9.Rv_rA41ku6PwfNgOuX7OjA"
         }
       ]
     ],

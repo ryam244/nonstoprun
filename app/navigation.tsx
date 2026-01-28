@@ -8,6 +8,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { NavigationMapView } from '@/components/MapView';
+import { useLocation } from '@/hooks/useLocation';
+import { useAppStore } from '@/stores/appStore';
 
 // Colors
 const PRIMARY = '#13ec49';
@@ -16,7 +19,6 @@ const BG_LIGHT = '#f6f8f6';
 const BG_DARK = '#102215';
 const WHITE = '#ffffff';
 const SLATE_100 = '#f1f5f9';
-const SLATE_200 = '#e2e8f0';
 const SLATE_400 = '#94a3b8';
 const SLATE_500 = '#64748b';
 const SLATE_800 = '#1e293b';
@@ -25,6 +27,12 @@ const SLATE_900 = '#0f172a';
 export default function NavigationScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  const { current: currentLocation, getMockLocation } = useLocation();
+  const { courses, selectedCourseId } = useAppStore();
+
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+  const location = currentLocation || getMockLocation();
 
   const bgColor = isDark ? BG_DARK : BG_LIGHT;
   const textColor = isDark ? WHITE : SLATE_900;
@@ -54,13 +62,14 @@ export default function NavigationScreen() {
         </Text>
       </View>
 
-      {/* Map Area */}
+      {/* Map Area - Real Mapbox Map */}
       <View style={styles.mapArea}>
-        <View style={[styles.mapPlaceholder, { backgroundColor: isDark ? SLATE_800 : SLATE_200 }]}>
-          <View style={styles.currentPosition}>
-            <View style={styles.positionDot} />
-          </View>
-        </View>
+        <NavigationMapView
+          center={location}
+          course={selectedCourse}
+          heading={0}
+          style={styles.map}
+        />
       </View>
 
       {/* Stats Cards */}
@@ -132,24 +141,24 @@ const styles = StyleSheet.create({
   },
   directionContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 24,
     paddingHorizontal: 24,
   },
   directionIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   distanceText: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '900',
     letterSpacing: -1,
   },
   instructionText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '500',
     marginTop: 4,
     textAlign: 'center',
@@ -160,34 +169,12 @@ const styles = StyleSheet.create({
   mapArea: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
-  mapPlaceholder: {
+  map: {
     flex: 1,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  currentPosition: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: PRIMARY,
-    borderWidth: 4,
-    borderColor: WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 6,
-  },
-  positionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: WHITE,
+    overflow: 'hidden',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -197,23 +184,23 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     borderWidth: 1,
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   statValue: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '900',
     letterSpacing: -1,
   },
@@ -228,7 +215,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 60,
+    height: 56,
     backgroundColor: PRIMARY,
     borderRadius: 9999,
     gap: 12,
@@ -240,19 +227,19 @@ const styles = StyleSheet.create({
   },
   transferButtonText: {
     color: SLATE_900,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginTop: 24,
+    marginTop: 16,
   },
   statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   statusText: {
     fontSize: 10,
