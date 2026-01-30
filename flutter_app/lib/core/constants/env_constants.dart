@@ -6,7 +6,7 @@ class EnvConstants {
   /// 開発時はここに直接APIキーを設定してもOK
   static const String mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
-    defaultValue: 'YOUR_MAPBOX_TOKEN_HERE', // ← ここにAPIキーを貼り付け
+    defaultValue: 'pk.eyJ1IjoiZGl2bWUiLCJhIjoiY21rdXRsZ3I2MmE0ZjNmb2Zvd2N6eDcyZiJ9.Rv_rA41ku6PwfNgOuX7OjA',
   );
 
   /// Mapbox Access Tokenが設定されているかチェック
