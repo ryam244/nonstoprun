@@ -1,0 +1,9 @@
+/// APIキー設定ファイルのテンプレート
+///
+/// 使用方法:
+/// 1. このファイルを api_keys.dart にコピー
+/// 2. 実際のAPIキーを設定
+/// 3. api_keys.dart はGitにコミットされません (.gitignore設定済み)
+class ApiKeys {
+  static const String mapboxAccessToken = 'YOUR_MAPBOX_TOKEN_HERE';
+}
