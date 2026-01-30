@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/providers/location_provider.dart';
+import '../../map/providers/traffic_signal_provider.dart';
 import '../domain/entities/course.dart';
 import 'widgets/course_card.dart';
 import 'widgets/map_view.dart';
@@ -32,6 +34,17 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   void initState() {
     super.initState();
     _mockCourses = _generateMockCourses();
+
+    // 信号データを取得
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final location = ref.read(locationProvider).location;
+      if (location != null) {
+        ref.read(trafficSignalProvider.notifier).fetchTrafficSignals(
+          center: location,
+          radiusKm: widget.distance,
+        );
+      }
+    });
   }
 
   @override

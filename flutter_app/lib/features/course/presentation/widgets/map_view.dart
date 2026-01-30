@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/constants/env_constants.dart';
+import '../../../../core/providers/location_provider.dart';
 import '../../domain/entities/course.dart';
 
 /// 地図表示ウィジェット
-/// TODO: Mapbox SDKを統合
-class MapView extends StatelessWidget {
+class MapView extends ConsumerStatefulWidget {
   final List<Course> courses;
   final int selectedCourseIndex;
 
@@ -16,9 +19,79 @@ class MapView extends StatelessWidget {
   });
 
   @override
+  ConsumerState<MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends ConsumerState<MapView> {
+  MapboxMap? _mapboxMap;
+
+  @override
   Widget build(BuildContext context) {
-    // TODO: Mapbox地図を表示
-    // 現在はプレースホルダー表示
+    final locationState = ref.watch(locationProvider);
+    final currentLocation = locationState.location;
+
+    // Mapbox Access Tokenがない場合はプレースホルダー表示
+    if (!EnvConstants.hasMapboxToken) {
+      return _buildPlaceholder(
+        'Mapbox Access Tokenが設定されていません',
+        'MAPBOX_ACCESS_TOKEN環境変数を設定してください',
+      );
+    }
+
+    // 位置情報取得中
+    if (locationState.isLoading) {
+      return _buildPlaceholder(
+        '位置情報を取得中...',
+        'しばらくお待ちください',
+      );
+    }
+
+    // 位置情報がない場合
+    if (currentLocation == null) {
+      return _buildPlaceholder(
+        '位置情報を取得できませんでした',
+        locationState.error ?? 'デフォルト位置を使用しています',
+      );
+    }
+
+    return MapWidget(
+      key: ValueKey('map_${currentLocation.latitude}_${currentLocation.longitude}'),
+      styleUri: MapboxStyles.MAPBOX_STREETS,
+      cameraOptions: CameraOptions(
+        center: Point(
+          coordinates: Position(
+            currentLocation.longitude,
+            currentLocation.latitude,
+          ),
+        ),
+        zoom: 14.0,
+      ),
+      onMapCreated: (MapboxMap mapboxMap) {
+        _mapboxMap = mapboxMap;
+        _addUserLocationMarker(currentLocation.latitude, currentLocation.longitude);
+        _drawCourseRoutes();
+      },
+    );
+  }
+
+  /// ユーザー位置マーカーを追加
+  Future<void> _addUserLocationMarker(double lat, double lon) async {
+    if (_mapboxMap == null) return;
+
+    // TODO: カスタムマーカーを追加
+    // 現在はデフォルトの中心点として表示
+  }
+
+  /// コースルートを描画
+  Future<void> _drawCourseRoutes() async {
+    if (_mapboxMap == null || widget.courses.isEmpty) return;
+
+    // TODO: 選択されたコースのルートを地図上に描画
+    // Polylineを使用してルートを表示
+  }
+
+  /// プレースホルダーを表示
+  Widget _buildPlaceholder(String title, String subtitle) {
     return Container(
       color: AppColors.backgroundSecondary,
       child: Center(
@@ -32,18 +105,23 @@ class MapView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '地図を表示中...',
+              title,
               style: AppTypography.headline.copyWith(
                 color: AppColors.textSecondary,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              'Mapbox統合予定',
-              style: AppTypography.caption1,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                subtitle,
+                style: AppTypography.caption1,
+                textAlign: TextAlign.center,
+              ),
             ),
-            const SizedBox(height: 24),
-            if (courses.isNotEmpty)
+            if (widget.courses.isNotEmpty) ...[
+              const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.symmetric(horizontal: 32),
@@ -59,7 +137,7 @@ class MapView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      courses[selectedCourseIndex].name,
+                      widget.courses[widget.selectedCourseIndex].name,
                       style: AppTypography.subheadline.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -68,6 +146,7 @@ class MapView extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
           ],
         ),
       ),

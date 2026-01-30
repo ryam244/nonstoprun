@@ -5,15 +5,31 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/providers/location_provider.dart';
 import '../providers/distance_provider.dart';
 
 /// トップ画面: 距離入力とコース検索
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 位置情報を取得
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(locationProvider.notifier).fetchCurrentLocation();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final distance = ref.watch(distanceProvider);
+    final locationState = ref.watch(locationProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -38,6 +54,50 @@ class HomeScreen extends ConsumerWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
+                  // 位置情報の状態表示
+                  if (locationState.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppTheme.spacingSm),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: AppTheme.spacingSm),
+                          Text(
+                            '位置情報を取得中...',
+                            style: AppTypography.caption1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (locationState.error != null && !locationState.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppTheme.spacingSm),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.location_off,
+                            size: 16,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: AppTheme.spacingXs),
+                          Flexible(
+                            child: Text(
+                              locationState.error!,
+                              style: AppTypography.caption1.copyWith(
+                                color: AppColors.warning,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
