@@ -21,6 +21,8 @@ class AppColors {
   static const Color greenRoute = Color(0xFF34C759); // 緑道
   static const Color yellowRoute = Color(0xFFFFCC00); // 標準ルート
   static const Color blueRoute = Color(0xFF5AC8FA); // フラットルート
+  static const Color parkRouteColor = Color(0xFF34C759); // 公園優先ルート
+  static const Color greenwayRouteColor = Color(0xFF30D158); // 緑道優先ルート
 
   // Feature colors
   static const Color trafficSignal = Color(0xFFFF3B30); // 信号

@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../map/providers/traffic_signal_provider.dart';
 import '../../map/data/overpass_api_service.dart';
+import '../../navigation/presentation/navigation_screen.dart';
 import '../domain/entities/course.dart';
 import '../domain/usecases/route_generator.dart';
 import 'widgets/course_card.dart';
@@ -208,7 +209,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                           child: CourseCard(
                             course: _courses[index],
                             onTap: () {
-                              // TODO: ナビゲーション開始
+                              // ナビゲーション画面に遷移
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => NavigationScreen(
+                                    course: _courses[index],
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         );
