@@ -58,7 +58,7 @@ class NavigationControls extends ConsumerWidget {
         return _buildPrimaryButton(
           icon: Icons.play_arrow,
           label: 'スタート',
-          onPressed: () => ref.read(navigationProvider.notifier).start(),
+          onPressed: () => _handleStart(context, ref),
         );
 
       case NavigationStatus.running:
@@ -73,12 +73,34 @@ class NavigationControls extends ConsumerWidget {
         return _buildPrimaryButton(
           icon: Icons.play_arrow,
           label: '再開',
-          onPressed: () => ref.read(navigationProvider.notifier).resume(),
+          onPressed: () => _handleResume(context, ref),
         );
 
       case NavigationStatus.idle:
       case NavigationStatus.completed:
         return const SizedBox.shrink();
+    }
+  }
+
+  /// スタート処理（エラーハンドリング付き）
+  Future<void> _handleStart(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(navigationProvider.notifier).start();
+    } catch (e) {
+      if (context.mounted) {
+        _showErrorDialog(context, 'ナビゲーションを開始できませんでした', e.toString());
+      }
+    }
+  }
+
+  /// 再開処理（エラーハンドリング付き）
+  Future<void> _handleResume(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(navigationProvider.notifier).resume();
+    } catch (e) {
+      if (context.mounted) {
+        _showErrorDialog(context, 'ナビゲーションを再開できませんでした', e.toString());
+      }
     }
   }
 
@@ -161,6 +183,22 @@ class NavigationControls extends ConsumerWidget {
               foregroundColor: Colors.red,
             ),
             child: const Text('停止'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
         ],
       ),

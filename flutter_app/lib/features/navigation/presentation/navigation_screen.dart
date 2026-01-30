@@ -27,7 +27,29 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     super.initState();
     // ナビゲーションを準備
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(navigationProvider.notifier).prepare(widget.course);
+      try {
+        ref.read(navigationProvider.notifier).prepare(widget.course);
+      } catch (e) {
+        // コースデータが無効な場合はエラーダイアログを表示して戻る
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('エラー'),
+              content: Text('コースデータが無効です: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     });
   }
 

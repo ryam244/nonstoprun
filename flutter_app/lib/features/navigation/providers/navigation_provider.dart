@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/services/location_service.dart';
@@ -22,6 +23,11 @@ class NavigationNotifier extends StateNotifier<NavigationState> {
 
   /// ナビゲーションを準備
   void prepare(Course course) {
+    // コースの座標が空でないことを確認
+    if (course.coordinates.isEmpty) {
+      throw Exception('Course coordinates are empty');
+    }
+
     state = NavigationState(
       status: NavigationStatus.ready,
       course: course,
@@ -36,31 +42,49 @@ class NavigationNotifier extends StateNotifier<NavigationState> {
     }
 
     final course = state.course;
-    if (course == null) return;
+    if (course == null || course.coordinates.isEmpty) {
+      throw Exception('Invalid course data');
+    }
 
-    // 現在地を取得
-    final currentLocation = await _locationService.getCurrentLocation();
-    if (currentLocation == null) return;
+    try {
+      // 現在地を取得
+      final currentLocation = await _locationService.getCurrentLocation();
+      if (currentLocation == null) {
+        throw Exception('Failed to get current location. Please enable location services.');
+      }
 
-    // 状態を更新
-    state = state.copyWith(
-      status: NavigationStatus.running,
-      currentLocation: currentLocation,
-      startTime: state.startTime ?? DateTime.now(),
-      traveledPath: [currentLocation],
-    );
+      // 状態を更新
+      state = state.copyWith(
+        status: NavigationStatus.running,
+        currentLocation: currentLocation,
+        startTime: state.startTime ?? DateTime.now(),
+        traveledPath: [currentLocation],
+      );
 
-    // 位置情報の継続的な監視を開始
-    _startLocationTracking();
-    _startTimer();
+      // 位置情報の継続的な監視を開始
+      _startLocationTracking();
+      _startTimer();
+    } catch (e) {
+      // エラーが発生した場合は状態をリセット
+      state = state.copyWith(status: NavigationStatus.ready);
+      rethrow;
+    }
   }
 
   /// 位置情報の継続的な監視
   void _startLocationTracking() {
     _locationSubscription?.cancel();
-    _locationSubscription = _locationService.getPositionStream().listen((location) {
-      _updateLocation(location);
-    });
+    _locationSubscription = _locationService.getPositionStream().listen(
+      (location) {
+        _updateLocation(location);
+      },
+      onError: (error) {
+        // 位置情報取得エラーをハンドリング
+        // エラーが発生してもナビゲーションは継続
+        debugPrint('Location tracking error: $error');
+      },
+      cancelOnError: false, // エラーが発生してもストリームを継続
+    );
   }
 
   /// タイマー開始（1秒ごとに経過時間を更新）
@@ -80,45 +104,67 @@ class NavigationNotifier extends StateNotifier<NavigationState> {
     }
 
     final course = state.course!;
-    final traveledPath = [...state.traveledPath, newLocation];
 
-    // 走行距離を計算（実際の軌跡から）
-    final distanceTraveled = _navigationService.calculateActualDistance(traveledPath);
+    // コースの座標が空でないことを確認
+    if (course.coordinates.isEmpty) {
+      return;
+    }
 
-    // 残り距離を計算
-    final distanceRemaining = _navigationService.calculateDistanceRemaining(
-      newLocation,
-      course.coordinates,
-    );
+    var traveledPath = [...state.traveledPath, newLocation];
 
-    // ルート逸脱判定
-    final isOffRoute = _navigationService.isOffRoute(newLocation, course.coordinates);
+    // メモリ効率化: traveledPathが1000ポイントを超えたら間引く（2点に1点残す）
+    if (traveledPath.length > 1000) {
+      traveledPath = [
+        for (int i = 0; i < traveledPath.length; i += 2) traveledPath[i]
+      ];
+    }
 
-    // 現在のペースを計算
-    final currentPace = _navigationService.calculateCurrentPace(
-      traveledPath: traveledPath,
-      elapsedTime: state.elapsedTime,
-    );
+    try {
+      // 走行距離を計算（実際の軌跡から）
+      final distanceTraveled = _navigationService.calculateActualDistance(traveledPath);
 
-    // コース完了判定
-    final isCompleted = _navigationService.isCompleted(
-      currentLocation: newLocation,
-      course: course,
-      distanceTraveled: distanceTraveled,
-    );
+      // 残り距離を計算
+      final distanceRemaining = _navigationService.calculateDistanceRemaining(
+        newLocation,
+        course.coordinates,
+      );
 
-    state = state.copyWith(
-      currentLocation: newLocation,
-      distanceTraveled: distanceTraveled,
-      distanceRemaining: distanceRemaining,
-      isOffRoute: isOffRoute,
-      currentPace: currentPace,
-      traveledPath: traveledPath,
-    );
+      // ルート逸脱判定
+      final isOffRoute = _navigationService.isOffRoute(newLocation, course.coordinates);
 
-    // 完了した場合
-    if (isCompleted) {
-      complete();
+      // 現在のペースを計算
+      final currentPace = _navigationService.calculateCurrentPace(
+        traveledPath: traveledPath,
+        elapsedTime: state.elapsedTime,
+      );
+
+      // コース完了判定
+      final isCompleted = _navigationService.isCompleted(
+        currentLocation: newLocation,
+        course: course,
+        distanceTraveled: distanceTraveled,
+      );
+
+      state = state.copyWith(
+        currentLocation: newLocation,
+        distanceTraveled: distanceTraveled,
+        distanceRemaining: distanceRemaining,
+        isOffRoute: isOffRoute,
+        currentPace: currentPace,
+        traveledPath: traveledPath,
+      );
+
+      // 完了した場合
+      if (isCompleted) {
+        complete();
+      }
+    } catch (e) {
+      // 計算エラーが発生しても位置情報は更新
+      debugPrint('Navigation calculation error: $e');
+      state = state.copyWith(
+        currentLocation: newLocation,
+        traveledPath: traveledPath,
+      );
     }
   }
 

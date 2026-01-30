@@ -28,22 +28,35 @@ class _NavigationMapViewState extends State<NavigationMapView> {
 
   @override
   Widget build(BuildContext context) {
+    // デフォルトの中心座標（東京駅）
+    final defaultCenter = Point(
+      coordinates: Position(139.7673068, 35.6809591),
+    );
+
+    // 中心座標を決定
+    Point center;
+    if (widget.currentLocation != null) {
+      center = Point(
+        coordinates: Position(
+          widget.currentLocation!.longitude,
+          widget.currentLocation!.latitude,
+        ),
+      );
+    } else if (widget.course.coordinates.isNotEmpty) {
+      center = Point(
+        coordinates: Position(
+          widget.course.coordinates.first.longitude,
+          widget.course.coordinates.first.latitude,
+        ),
+      );
+    } else {
+      center = defaultCenter;
+    }
+
     return MapWidget(
       key: const ValueKey('navigation_map'),
       cameraOptions: CameraOptions(
-        center: widget.currentLocation != null
-            ? Point(
-                coordinates: Position(
-                  widget.currentLocation!.longitude,
-                  widget.currentLocation!.latitude,
-                ),
-              )
-            : Point(
-                coordinates: Position(
-                  widget.course.coordinates.first.longitude,
-                  widget.course.coordinates.first.latitude,
-                ),
-              ),
+        center: center,
         zoom: 15.0,
       ),
       styleUri: MapboxStyles.OUTDOORS,
@@ -79,7 +92,7 @@ class _NavigationMapViewState extends State<NavigationMapView> {
 
   /// コースルートを描画
   Future<void> _drawCourseRoute() async {
-    if (_polylineAnnotationManager == null) return;
+    if (_polylineAnnotationManager == null || widget.course.coordinates.isEmpty) return;
 
     final coordinates = widget.course.coordinates
         .map((coord) => Position(coord.longitude, coord.latitude))
