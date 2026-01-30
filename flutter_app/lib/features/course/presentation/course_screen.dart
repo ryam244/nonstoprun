@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../map/providers/traffic_signal_provider.dart';
+import '../../map/data/overpass_api_service.dart';
 import '../domain/entities/course.dart';
 import '../domain/usecases/route_generator.dart';
 import 'widgets/course_card.dart';
@@ -29,12 +30,13 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   final PageController _pageController = PageController();
   List<Course> _courses = [];
   final RouteGenerator _routeGenerator = RouteGenerator();
+  final OverpassApiService _overpassApiService = OverpassApiService();
 
   @override
   void initState() {
     super.initState();
 
-    // 信号データを取得してコースを生成
+    // 信号データ、道路データ、公園データを取得してコースを生成
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final location = ref.read(locationProvider).location;
       if (location != null) {
@@ -44,12 +46,24 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           radiusKm: widget.distance,
         );
 
-        // 信号データを使ってコースを生成
+        // 道路データと公園データを取得
+        final roads = await _overpassApiService.getRoadSegments(
+          center: location,
+          radiusKm: widget.distance,
+        );
+        final parks = await _overpassApiService.getParks(
+          center: location,
+          radiusKm: widget.distance,
+        );
+
+        // 信号、道路、公園データを使ってコースを生成
         final signals = ref.read(trafficSignalProvider).signals;
         final generatedCourses = _routeGenerator.generateRoutes(
           center: location,
           distanceKm: widget.distance,
           signals: signals,
+          roads: roads,
+          parks: parks,
         );
 
         setState(() {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_constants.dart';
 import '../domain/traffic_signal.dart';
+import '../domain/road_segment.dart';
 
 /// Overpass API サービス
 /// OpenStreetMapデータから信号機情報を取得
@@ -133,5 +134,129 @@ out body;
 );
 out body;
 ''';
+  }
+
+  /// 道路データを取得
+  Future<List<RoadSegment>> getRoadSegments({
+    required LatLng center,
+    double radiusKm = AppConstants.searchRadiusKm,
+  }) async {
+    try {
+      final radiusMeters = (radiusKm * 1000).toInt();
+
+      final query = '''
+[out:json][timeout:30];
+(
+  way["highway"~"footway|path|cycleway|pedestrian|living_street|residential|tertiary|secondary|primary"]
+    (around:$radiusMeters,${center.latitude},${center.longitude});
+);
+out geom;
+''';
+
+      final response = await _dio.post(
+        _baseUrl,
+        data: query,
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return _parseRoadSegments(response.data);
+      } else {
+        throw Exception('Failed to load road segments: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching road segments: $e');
+    }
+  }
+
+  /// 道路データをパース
+  List<RoadSegment> _parseRoadSegments(dynamic data) {
+    final List<RoadSegment> segments = [];
+
+    if (data is Map<String, dynamic> && data['elements'] is List) {
+      final elements = data['elements'] as List;
+
+      for (final element in elements) {
+        if (element is Map<String, dynamic>) {
+          try {
+            segments.add(RoadSegment.fromJson(element));
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+    }
+
+    return segments;
+  }
+
+  /// 公園データを取得
+  Future<List<Park>> getParks({
+    required LatLng center,
+    double radiusKm = AppConstants.searchRadiusKm,
+  }) async {
+    try {
+      final radiusMeters = (radiusKm * 1000).toInt();
+
+      final query = '''
+[out:json][timeout:30];
+(
+  way["leisure"="park"]
+    (around:$radiusMeters,${center.latitude},${center.longitude});
+  way["landuse"="recreation_ground"]
+    (around:$radiusMeters,${center.latitude},${center.longitude});
+);
+out center geom;
+''';
+
+      final response = await _dio.post(
+        _baseUrl,
+        data: query,
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return _parseParks(response.data);
+      } else {
+        throw Exception('Failed to load parks: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching parks: $e');
+    }
+  }
+
+  /// 公園データをパース
+  List<Park> _parseParks(dynamic data) {
+    final List<Park> parks = [];
+
+    if (data is Map<String, dynamic> && data['elements'] is List) {
+      final elements = data['elements'] as List;
+
+      for (final element in elements) {
+        if (element is Map<String, dynamic>) {
+          try {
+            parks.add(Park.fromJson(element));
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+    }
+
+    return parks;
   }
 }
