@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../../../../core/providers/location_provider.dart';
+import '../../../map/providers/traffic_signal_provider.dart';
 import '../../domain/entities/course.dart';
 
 /// 地図表示ウィジェット
@@ -24,6 +25,19 @@ class MapView extends ConsumerStatefulWidget {
 
 class _MapViewState extends ConsumerState<MapView> {
   MapboxMap? _mapboxMap;
+  PointAnnotationManager? _pointAnnotationManager;
+  PolylineAnnotationManager? _polylineAnnotationManager;
+  CircleAnnotationManager? _circleAnnotationManager;
+
+  @override
+  void didUpdateWidget(MapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 選択されたコースが変わったらルートを再描画
+    if (oldWidget.selectedCourseIndex != widget.selectedCourseIndex) {
+      _drawCourseRoutes();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,28 +80,110 @@ class _MapViewState extends ConsumerState<MapView> {
         ),
         zoom: 14.0,
       ),
-      onMapCreated: (MapboxMap mapboxMap) {
+      onMapCreated: (MapboxMap mapboxMap) async {
         _mapboxMap = mapboxMap;
-        _addUserLocationMarker(currentLocation.latitude, currentLocation.longitude);
-        _drawCourseRoutes();
+
+        // Annotation Managerを初期化
+        _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+        _polylineAnnotationManager = await mapboxMap.annotations.createPolylineAnnotationManager();
+        _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+
+        // ユーザー位置マーカーを追加
+        await _addUserLocationMarker(currentLocation.latitude, currentLocation.longitude);
+
+        // 信号マーカーを追加
+        await _addTrafficSignalMarkers();
+
+        // コースルートを描画
+        await _drawCourseRoutes();
       },
     );
   }
 
-  /// ユーザー位置マーカーを追加
+  /// ユーザー位置マーカーを追加（青い円）
   Future<void> _addUserLocationMarker(double lat, double lon) async {
-    if (_mapboxMap == null) return;
+    if (_circleAnnotationManager == null) return;
 
-    // TODO: カスタムマーカーを追加
-    // 現在はデフォルトの中心点として表示
+    final circleAnnotation = CircleAnnotationOptions(
+      geometry: Point(coordinates: Position(lon, lat)),
+      circleRadius: 10.0,
+      circleColor: Colors.blue.toARGB32(),
+      circleStrokeWidth: 3.0,
+      circleStrokeColor: Colors.white.toARGB32(),
+    );
+
+    await _circleAnnotationManager!.create(circleAnnotation);
+  }
+
+  /// 信号マーカーを追加
+  Future<void> _addTrafficSignalMarkers() async {
+    if (_pointAnnotationManager == null) return;
+
+    final trafficSignalState = ref.read(trafficSignalProvider);
+    final signals = trafficSignalState.signals;
+
+    if (signals.isEmpty) return;
+
+    // 各信号にマーカーを追加
+    final annotations = signals.map((signal) {
+      return PointAnnotationOptions(
+        geometry: Point(
+          coordinates: Position(
+            signal.location.longitude,
+            signal.location.latitude,
+          ),
+        ),
+        iconImage: 'traffic-signal-icon',
+        iconSize: 0.5,
+        iconColor: AppColors.trafficSignal.toARGB32(),
+      );
+    }).toList();
+
+    await _pointAnnotationManager!.createMulti(annotations);
   }
 
   /// コースルートを描画
   Future<void> _drawCourseRoutes() async {
-    if (_mapboxMap == null || widget.courses.isEmpty) return;
+    if (_polylineAnnotationManager == null || widget.courses.isEmpty) return;
 
-    // TODO: 選択されたコースのルートを地図上に描画
-    // Polylineを使用してルートを表示
+    // 既存のPolylineをクリア
+    await _polylineAnnotationManager!.deleteAll();
+
+    final selectedCourse = widget.courses[widget.selectedCourseIndex];
+
+    // コースに座標データがない場合はスキップ
+    if (selectedCourse.coordinates.isEmpty) return;
+
+    // 座標をMapboxのPosition形式に変換
+    final coordinates = selectedCourse.coordinates
+        .map((latLng) => Position(latLng.longitude, latLng.latitude))
+        .toList();
+
+    // Polylineの色を決定
+    final lineColor = _getRouteColor(selectedCourse.routeType);
+
+    final polylineAnnotation = PolylineAnnotationOptions(
+      geometry: LineString(coordinates: coordinates),
+      lineColor: lineColor.toARGB32(),
+      lineWidth: 4.0,
+      lineOpacity: 0.8,
+    );
+
+    await _polylineAnnotationManager!.create(polylineAnnotation);
+  }
+
+  /// ルートタイプに応じた色を取得
+  Color _getRouteColor(RouteType routeType) {
+    switch (routeType) {
+      case RouteType.park:
+        return AppColors.greenRoute;
+      case RouteType.greenway:
+        return AppColors.park;
+      case RouteType.flat:
+        return AppColors.blueRoute;
+      case RouteType.shortest:
+        return AppColors.yellowRoute;
+    }
   }
 
   /// プレースホルダーを表示

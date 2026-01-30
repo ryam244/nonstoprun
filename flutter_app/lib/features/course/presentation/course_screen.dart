@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../map/providers/traffic_signal_provider.dart';
 import '../domain/entities/course.dart';
+import '../domain/usecases/route_generator.dart';
 import 'widgets/course_card.dart';
 import 'widgets/map_view.dart';
 
@@ -26,23 +27,34 @@ class CourseScreen extends ConsumerStatefulWidget {
 class _CourseScreenState extends ConsumerState<CourseScreen> {
   int _selectedCourseIndex = 0;
   final PageController _pageController = PageController();
-
-  // TODO: 後でAPIから取得する
-  late List<Course> _mockCourses;
+  List<Course> _courses = [];
+  final RouteGenerator _routeGenerator = RouteGenerator();
 
   @override
   void initState() {
     super.initState();
-    _mockCourses = _generateMockCourses();
 
-    // 信号データを取得
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // 信号データを取得してコースを生成
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final location = ref.read(locationProvider).location;
       if (location != null) {
-        ref.read(trafficSignalProvider.notifier).fetchTrafficSignals(
+        // 信号データを取得
+        await ref.read(trafficSignalProvider.notifier).fetchTrafficSignals(
           center: location,
           radiusKm: widget.distance,
         );
+
+        // 信号データを使ってコースを生成
+        final signals = ref.read(trafficSignalProvider).signals;
+        final generatedCourses = _routeGenerator.generateRoutes(
+          center: location,
+          distanceKm: widget.distance,
+          signals: signals,
+        );
+
+        setState(() {
+          _courses = generatedCourses;
+        });
       }
     });
   }
@@ -53,49 +65,33 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     super.dispose();
   }
 
-  List<Course> _generateMockCourses() {
-    return [
-      Course(
-        id: '1',
-        name: '信号ゼロ！公園メインの快適${widget.distance.toStringAsFixed(1)}km',
-        distance: widget.distance,
-        signalCount: 0,
-        greenRatio: 90,
-        elevationGain: 15,
-        routeType: RouteType.park,
-        coordinates: [],
-      ),
-      Course(
-        id: '2',
-        name: '緑道80%！木陰が気持ちいい${widget.distance.toStringAsFixed(1)}km',
-        distance: widget.distance + 0.1,
-        signalCount: 1,
-        greenRatio: 80,
-        elevationGain: 25,
-        routeType: RouteType.greenway,
-        coordinates: [],
-      ),
-      Course(
-        id: '3',
-        name: '完全フラットな${widget.distance.toStringAsFixed(1)}km',
-        distance: widget.distance - 0.1,
-        signalCount: 2,
-        greenRatio: 40,
-        elevationGain: 5,
-        routeType: RouteType.flat,
-        coordinates: [],
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
+    // コースが生成されていない場合はローディング表示
+    if (_courses.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('${widget.distance.toStringAsFixed(1)} kmのコース'),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('コースを生成中...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
           // 地図表示
           MapView(
-            courses: _mockCourses,
+            courses: _courses,
             selectedCourseIndex: _selectedCourseIndex,
           ),
 
@@ -136,7 +132,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                             style: AppTypography.headline,
                           ),
                           Text(
-                            '${_mockCourses.length}件のコースが見つかりました',
+                            '${_courses.length}件のコースが見つかりました',
                             style: AppTypography.caption1,
                           ),
                         ],
@@ -161,7 +157,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
-                      _mockCourses.length,
+                      _courses.length,
                       (index) => Container(
                         margin: const EdgeInsets.symmetric(
                           horizontal: AppTheme.spacingXs,
@@ -189,14 +185,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                           _selectedCourseIndex = index;
                         });
                       },
-                      itemCount: _mockCourses.length,
+                      itemCount: _courses.length,
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppTheme.spacingMd,
                           ),
                           child: CourseCard(
-                            course: _mockCourses[index],
+                            course: _courses[index],
                             onTap: () {
                               // TODO: ナビゲーション開始
                             },
