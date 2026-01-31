@@ -18,6 +18,7 @@ class Course {
   final int elevationGain; // 累積標高(m)
   final RouteType routeType;
   final List<LatLng> coordinates;
+  final List<double>? elevations; // 標高データ(m)
   final String? description;
 
   Course({
@@ -29,6 +30,7 @@ class Course {
     required this.elevationGain,
     required this.routeType,
     required this.coordinates,
+    this.elevations,
     this.description,
   });
 
@@ -75,6 +77,7 @@ class Course {
     int? elevationGain,
     RouteType? routeType,
     List<LatLng>? coordinates,
+    List<double>? elevations,
     String? description,
   }) {
     return Course(
@@ -86,6 +89,7 @@ class Course {
       elevationGain: elevationGain ?? this.elevationGain,
       routeType: routeType ?? this.routeType,
       coordinates: coordinates ?? this.coordinates,
+      elevations: elevations ?? this.elevations,
       description: description ?? this.description,
     );
   }

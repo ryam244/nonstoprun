@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/navigation_state.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/providers/voice_navigation_provider.dart';
 
 /// ナビゲーション統計情報
-class NavigationStats extends StatelessWidget {
+class NavigationStats extends ConsumerWidget {
   final NavigationState navigationState;
 
   const NavigationStats({
@@ -12,7 +14,9 @@ class NavigationStats extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final voiceEnabled = ref.watch(voiceNavigationEnabledProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -29,6 +33,24 @@ class NavigationStats extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 音声ON/OFFボタン
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: Icon(
+                  voiceEnabled ? Icons.volume_up : Icons.volume_off,
+                  color: voiceEnabled ? AppColors.primary : Colors.grey,
+                ),
+                onPressed: () {
+                  ref.read(voiceNavigationEnabledProvider.notifier).state = !voiceEnabled;
+                  final service = ref.read(voiceNavigationServiceProvider);
+                  service.setEnabled(!voiceEnabled);
+                },
+                tooltip: voiceEnabled ? '音声案内をOFF' : '音声案内をON',
+              ),
+            ],
+          ),
           // メイン統計（距離と時間）
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,

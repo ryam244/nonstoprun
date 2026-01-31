@@ -33,8 +33,9 @@ class _MapViewState extends ConsumerState<MapView> {
   void didUpdateWidget(MapView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // 選択されたコースが変わったらルートを再描画
-    if (oldWidget.selectedCourseIndex != widget.selectedCourseIndex) {
+    // コースリストまたは選択が変わったら再描画
+    if (oldWidget.courses != widget.courses ||
+        oldWidget.selectedCourseIndex != widget.selectedCourseIndex) {
       _drawCourseRoutes();
     }
   }
@@ -142,34 +143,39 @@ class _MapViewState extends ConsumerState<MapView> {
     await _pointAnnotationManager!.createMulti(annotations);
   }
 
-  /// コースルートを描画
+  /// コースルートを描画（全コースを同時に色違いで表示）
   Future<void> _drawCourseRoutes() async {
     if (_polylineAnnotationManager == null || widget.courses.isEmpty) return;
 
     // 既存のPolylineをクリア
     await _polylineAnnotationManager!.deleteAll();
 
-    final selectedCourse = widget.courses[widget.selectedCourseIndex];
+    // 全コースを描画（選択されていないコースは薄く細く）
+    for (int i = 0; i < widget.courses.length; i++) {
+      final course = widget.courses[i];
+      final isSelected = i == widget.selectedCourseIndex;
 
-    // コースに座標データがない場合はスキップ
-    if (selectedCourse.coordinates.isEmpty) return;
+      // コースに座標データがない場合はスキップ
+      if (course.coordinates.isEmpty) continue;
 
-    // 座標をMapboxのPosition形式に変換
-    final coordinates = selectedCourse.coordinates
-        .map((latLng) => Position(latLng.longitude, latLng.latitude))
-        .toList();
+      // 座標をMapboxのPosition形式に変換
+      final coordinates = course.coordinates
+          .map((latLng) => Position(latLng.longitude, latLng.latitude))
+          .toList();
 
-    // Polylineの色を決定
-    final lineColor = _getRouteColor(selectedCourse.routeType);
+      // Polylineの色を決定
+      final lineColor = _getRouteColor(course.routeType);
 
-    final polylineAnnotation = PolylineAnnotationOptions(
-      geometry: LineString(coordinates: coordinates),
-      lineColor: lineColor.toARGB32(),
-      lineWidth: 4.0,
-      lineOpacity: 0.8,
-    );
+      // 選択されたコースは太く鮮やかに、それ以外は細く薄く
+      final polylineAnnotation = PolylineAnnotationOptions(
+        geometry: LineString(coordinates: coordinates),
+        lineColor: lineColor.toARGB32(),
+        lineWidth: isSelected ? 5.0 : 3.0,
+        lineOpacity: isSelected ? 0.9 : 0.5,
+      );
 
-    await _polylineAnnotationManager!.create(polylineAnnotation);
+      await _polylineAnnotationManager!.create(polylineAnnotation);
+    }
   }
 
   /// ルートタイプに応じた色を取得

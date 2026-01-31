@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/course.dart';
+import 'elevation_chart.dart';
 
 /// コース情報カード
 class CourseCard extends StatelessWidget {
@@ -92,6 +93,20 @@ class CourseCard extends StatelessWidget {
             ),
 
             const SizedBox(height: AppTheme.spacingMd),
+
+            // 高低差グラフ
+            if (course.elevations != null && course.elevations!.isNotEmpty) ...[
+              const Text(
+                '高低差',
+                style: AppTypography.caption1,
+              ),
+              const SizedBox(height: AppTheme.spacingXs),
+              ElevationChart(
+                elevations: course.elevations!,
+                height: 100,
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+            ],
 
             // 距離と推定時間
             Row(

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/location_provider.dart';
+import '../../../core/services/elevation_service.dart';
 import '../../map/providers/traffic_signal_provider.dart';
 import '../../map/data/overpass_api_service.dart';
 import '../../navigation/presentation/navigation_screen.dart';
@@ -32,6 +33,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   List<Course> _courses = [];
   final RouteGenerator _routeGenerator = RouteGenerator();
   final OverpassApiService _overpassApiService = OverpassApiService();
+  final ElevationService _elevationService = ElevationService();
 
   @override
   void initState() {
@@ -67,11 +69,43 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           parks: parks,
         );
 
+        // 各コースに標高データを追加
+        final coursesWithElevation = await _addElevationData(generatedCourses);
+
         setState(() {
-          _courses = generatedCourses;
+          _courses = coursesWithElevation;
         });
       }
     });
+  }
+
+  /// 各コースに標高データを追加
+  Future<List<Course>> _addElevationData(List<Course> courses) async {
+    final coursesWithElevation = <Course>[];
+
+    for (final course in courses) {
+      try {
+        // 標高データを取得
+        final elevations = await _elevationService.getElevations(course.coordinates);
+
+        // 累積標高を計算
+        final elevationGain = _elevationService.calculateElevationGain(elevations);
+
+        // 標高データと累積標高を含むコースを作成
+        final updatedCourse = course.copyWith(
+          elevations: elevations,
+          elevationGain: elevationGain.round(),
+        );
+
+        coursesWithElevation.add(updatedCourse);
+      } catch (e) {
+        // 標高データ取得に失敗した場合は元のコースをそのまま使用
+        debugPrint('Failed to fetch elevation data: $e');
+        coursesWithElevation.add(course);
+      }
+    }
+
+    return coursesWithElevation;
   }
 
   @override

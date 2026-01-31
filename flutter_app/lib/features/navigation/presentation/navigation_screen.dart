@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../course/domain/entities/course.dart';
 import '../domain/entities/navigation_state.dart';
 import '../providers/navigation_provider.dart';
+import '../../../core/providers/voice_navigation_provider.dart';
 import 'widgets/navigation_map_view.dart';
 import 'widgets/navigation_stats.dart';
 import 'widgets/navigation_controls.dart';
 import 'widgets/off_route_alert.dart';
+import 'widgets/direction_arrow.dart';
 
 /// ナビゲーション画面
 class NavigationScreen extends ConsumerStatefulWidget {
@@ -22,6 +24,10 @@ class NavigationScreen extends ConsumerStatefulWidget {
 }
 
 class _NavigationScreenState extends ConsumerState<NavigationScreen> {
+  NavigationStatus? _previousStatus;
+  bool _previousOffRouteState = false;
+  double _lastAnnouncedDistance = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -53,9 +59,63 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     });
   }
 
+  /// 音声案内を処理
+  void _handleVoiceNavigation(NavigationState state) {
+    final voiceService = ref.read(voiceNavigationServiceProvider);
+    final isEnabled = ref.read(voiceNavigationEnabledProvider);
+
+    if (!isEnabled) return;
+
+    // 状態変化による音声案内
+    if (_previousStatus != state.status) {
+      switch (state.status) {
+        case NavigationStatus.running:
+          if (_previousStatus == NavigationStatus.ready) {
+            voiceService.announceStart(state.course?.distance ?? 0);
+          } else if (_previousStatus == NavigationStatus.paused) {
+            voiceService.announceResume();
+          }
+          break;
+        case NavigationStatus.paused:
+          voiceService.announcePause();
+          break;
+        case NavigationStatus.completed:
+          voiceService.announceComplete(
+            state.distanceTraveled,
+            state.elapsedTime,
+          );
+          break;
+        default:
+          break;
+      }
+      _previousStatus = state.status;
+    }
+
+    // ルート逸脱の音声案内（1回のみ）
+    if (state.isOffRoute && !_previousOffRouteState) {
+      voiceService.announceOffRoute();
+    }
+    _previousOffRouteState = state.isOffRoute;
+
+    // 1km毎の距離案内
+    if (state.status == NavigationStatus.running) {
+      final currentKm = state.distanceTraveled.floor().toDouble();
+      if (currentKm > _lastAnnouncedDistance && currentKm % 1 == 0) {
+        voiceService.announceDistance(
+          state.distanceTraveled,
+          state.distanceRemaining,
+        );
+        _lastAnnouncedDistance = currentKm;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final navigationState = ref.watch(navigationProvider);
+
+    // 音声案内を処理
+    _handleVoiceNavigation(navigationState);
 
     return PopScope(
       canPop: navigationState.status != NavigationStatus.running,
@@ -93,6 +153,21 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
               right: 16,
               child: NavigationStats(navigationState: navigationState),
             ),
+
+            // 進行方向矢印（ナビゲーション実行中のみ表示）
+            if (navigationState.status == NavigationStatus.running &&
+                navigationState.currentLocation != null)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 140,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: DirectionArrow(
+                    currentLocation: navigationState.currentLocation,
+                    route: widget.course.coordinates,
+                  ),
+                ),
+              ),
 
             // コントロールボタン
             Positioned(

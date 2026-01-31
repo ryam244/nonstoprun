@@ -60,6 +60,12 @@ dependencies:
   intl: ^0.19.0
   latlong2: ^0.9.1
 
+  # Voice navigation
+  flutter_tts: ^4.2.0
+
+  # Charts for elevation graph
+  fl_chart: ^0.69.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
