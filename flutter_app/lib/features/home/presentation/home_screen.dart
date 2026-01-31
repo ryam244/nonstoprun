@@ -41,11 +41,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.all(AppTheme.spacingLg),
               child: Column(
                 children: [
-                  Text(
-                    'Non-Stop Run',
-                    style: AppTypography.title1.copyWith(
-                      color: AppColors.primary,
-                    ),
+                  // タイトルと設定ボタン
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 40), // 左側のスペース（バランス用）
+                      Expanded(
+                        child: Text(
+                          'Non-Stop Run',
+                          style: AppTypography.title1.copyWith(
+                            color: AppColors.primary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      // 設定ボタン
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        color: AppColors.primary,
+                        onPressed: () => context.push('/settings'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppTheme.spacingSm),
                   Text(

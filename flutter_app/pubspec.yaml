@@ -66,6 +66,10 @@ dependencies:
   # Charts for elevation graph
   fl_chart: ^0.69.2
 
+  # App info and URL launcher (for settings screen)
+  package_info_plus: ^8.1.2
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

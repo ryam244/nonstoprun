@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 /// アプリケーション全体のルーティング設定
 class AppRouter {
@@ -22,6 +23,11 @@ class AppRouter {
             distance: extra?['distance'] as double? ?? 5.0,
           );
         },
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
