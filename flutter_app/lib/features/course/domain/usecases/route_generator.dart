@@ -106,7 +106,7 @@ class RouteGenerator {
     final parkRoads = roads.where((r) => r.isParkPath).toList();
     final otherRoads = roads.where((r) => !r.isParkPath).toList();
 
-    final coordinates = _buildRoute(
+    final routeData = _buildRouteWithRoads(
       center: center,
       targetDistanceKm: distanceKm,
       preferredRoads: parkRoads,
@@ -115,8 +115,12 @@ class RouteGenerator {
       signals: signals,
     );
 
+    final coordinates = routeData['coordinates'] as List<LatLng>;
+    final usedRoads = routeData['usedRoads'] as List<RoadSegment>;
+
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
+    final surfaceRatios = _calculateSurfaceRatios(usedRoads);
 
     return Course(
       id: 'park-route',
@@ -127,6 +131,7 @@ class RouteGenerator {
       elevationGain: 15, // TODO: 実際の標高データから計算
       routeType: RouteType.park,
       coordinates: coordinates,
+      surfaceRatios: surfaceRatios,
     );
   }
 
@@ -138,7 +143,7 @@ class RouteGenerator {
     required List<TrafficSignal> signals,
     required List<Park> parks,
   }) {
-    final coordinates = _buildRoute(
+    final routeData = _buildRouteWithRoads(
       center: center,
       targetDistanceKm: distanceKm,
       preferredRoads: roads,
@@ -147,8 +152,12 @@ class RouteGenerator {
       signals: signals,
     );
 
+    final coordinates = routeData['coordinates'] as List<LatLng>;
+    final usedRoads = routeData['usedRoads'] as List<RoadSegment>;
+
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
+    final surfaceRatios = _calculateSurfaceRatios(usedRoads);
 
     return Course(
       id: 'greenway-route',
@@ -159,6 +168,7 @@ class RouteGenerator {
       elevationGain: 25,
       routeType: RouteType.greenway,
       coordinates: coordinates,
+      surfaceRatios: surfaceRatios,
     );
   }
 
@@ -170,7 +180,7 @@ class RouteGenerator {
     required List<TrafficSignal> signals,
     required List<Park> parks,
   }) {
-    final coordinates = _buildRoute(
+    final routeData = _buildRouteWithRoads(
       center: center,
       targetDistanceKm: distanceKm,
       preferredRoads: roads,
@@ -179,8 +189,12 @@ class RouteGenerator {
       signals: signals,
     );
 
+    final coordinates = routeData['coordinates'] as List<LatLng>;
+    final usedRoads = routeData['usedRoads'] as List<RoadSegment>;
+
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
+    final surfaceRatios = _calculateSurfaceRatios(usedRoads);
 
     return Course(
       id: 'flat-route',
@@ -191,11 +205,12 @@ class RouteGenerator {
       elevationGain: 5,
       routeType: RouteType.flat,
       coordinates: coordinates,
+      surfaceRatios: surfaceRatios,
     );
   }
 
-  /// ルートを構築
-  List<LatLng> _buildRoute({
+  /// ルートを構築（道路情報も返す）
+  Map<String, dynamic> _buildRouteWithRoads({
     required LatLng center,
     required double targetDistanceKm,
     required List<RoadSegment> preferredRoads,
@@ -204,6 +219,7 @@ class RouteGenerator {
     required List<TrafficSignal> signals,
   }) {
     final coordinates = <LatLng>[];
+    final usedRoads = <RoadSegment>[];
     double accumulatedDistance = 0;
     LatLng currentPosition = center;
 
@@ -247,6 +263,7 @@ class RouteGenerator {
       accumulatedDistance += nextRoad.lengthKm;
       currentPosition = nextRoad.coordinates.last;
       usedRoadIds.add(nextRoad.id);
+      usedRoads.add(nextRoad);
 
       // 目標距離の120%を超えたら終了
       if (accumulatedDistance > targetDistanceKm * 1.2) break;
@@ -257,7 +274,10 @@ class RouteGenerator {
       coordinates.add(center);
     }
 
-    return coordinates;
+    return {
+      'coordinates': coordinates,
+      'usedRoads': usedRoads,
+    };
   }
 
   /// 道路に近くの信号があるかチェック
@@ -492,5 +512,35 @@ class RouteGenerator {
     final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
 
     return earthRadiusKm * c;
+  }
+
+  /// 路面タイプの割合を計算
+  Map<SurfaceType, int> _calculateSurfaceRatios(List<RoadSegment> roads) {
+    if (roads.isEmpty) return {};
+
+    // 各路面タイプの総距離を計算
+    final surfaceDistances = <SurfaceType, double>{};
+    double totalDistance = 0;
+
+    for (final road in roads) {
+      final surfaceType = road.surfaceType;
+      final distance = road.lengthKm;
+
+      surfaceDistances[surfaceType] = (surfaceDistances[surfaceType] ?? 0) + distance;
+      totalDistance += distance;
+    }
+
+    if (totalDistance == 0) return {};
+
+    // 割合を計算（%）
+    final ratios = <SurfaceType, int>{};
+    for (final entry in surfaceDistances.entries) {
+      final percentage = ((entry.value / totalDistance) * 100).round();
+      if (percentage > 0) { // 0%は除外
+        ratios[entry.key] = percentage;
+      }
+    }
+
+    return ratios;
   }
 }

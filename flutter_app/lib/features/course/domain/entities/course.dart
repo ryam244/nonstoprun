@@ -1,4 +1,5 @@
 import 'package:latlong2/latlong.dart';
+import '../../../map/domain/road_segment.dart';
 
 /// ルートの種類
 enum RouteType {
@@ -19,6 +20,7 @@ class Course {
   final RouteType routeType;
   final List<LatLng> coordinates;
   final List<double>? elevations; // 標高データ(m)
+  final Map<SurfaceType, int>? surfaceRatios; // 路面タイプ割合(%)
   final String? description;
 
   Course({
@@ -31,6 +33,7 @@ class Course {
     required this.routeType,
     required this.coordinates,
     this.elevations,
+    this.surfaceRatios,
     this.description,
   });
 
@@ -78,6 +81,7 @@ class Course {
     RouteType? routeType,
     List<LatLng>? coordinates,
     List<double>? elevations,
+    Map<SurfaceType, int>? surfaceRatios,
     String? description,
   }) {
     return Course(
@@ -90,6 +94,7 @@ class Course {
       routeType: routeType ?? this.routeType,
       coordinates: coordinates ?? this.coordinates,
       elevations: elevations ?? this.elevations,
+      surfaceRatios: surfaceRatios ?? this.surfaceRatios,
       description: description ?? this.description,
     );
   }

@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/course.dart';
+import '../../../map/domain/road_segment.dart';
 import 'elevation_chart.dart';
 
 /// コース情報カード
@@ -104,6 +105,26 @@ class CourseCard extends StatelessWidget {
               ElevationChart(
                 elevations: course.elevations!,
                 height: 100,
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+            ],
+
+            // 路面タイプ
+            if (course.surfaceRatios != null && course.surfaceRatios!.isNotEmpty) ...[
+              const Text(
+                '路面タイプ',
+                style: AppTypography.caption1,
+              ),
+              const SizedBox(height: AppTheme.spacingXs),
+              Wrap(
+                spacing: AppTheme.spacingSm,
+                runSpacing: AppTheme.spacingXs,
+                children: course.surfaceRatios!.entries.map((entry) {
+                  return _SurfaceTypeChip(
+                    surfaceType: entry.key,
+                    percentage: entry.value,
+                  );
+                }).toList(),
               ),
               const SizedBox(height: AppTheme.spacingMd),
             ],
@@ -225,4 +246,107 @@ class _StatItem extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 路面タイプチップ
+class _SurfaceTypeChip extends StatelessWidget {
+  final SurfaceType surfaceType;
+  final int percentage;
+
+  const _SurfaceTypeChip({
+    required this.surfaceType,
+    required this.percentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final info = _getSurfaceTypeInfo(surfaceType);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingSm,
+        vertical: AppTheme.spacingXs,
+      ),
+      decoration: BoxDecoration(
+        color: info.color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(
+          color: info.color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            info.icon,
+            size: 16,
+            color: info.color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${info.label} $percentage%',
+            style: AppTypography.caption1.copyWith(
+              color: info.color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _SurfaceTypeInfo _getSurfaceTypeInfo(SurfaceType type) {
+    switch (type) {
+      case SurfaceType.paved:
+        return _SurfaceTypeInfo(
+          icon: Icons.route,
+          label: '舗装路',
+          color: AppColors.primary,
+        );
+      case SurfaceType.unpaved:
+        return _SurfaceTypeInfo(
+          icon: Icons.terrain,
+          label: '土',
+          color: const Color(0xFF8B4513),
+        );
+      case SurfaceType.gravel:
+        return _SurfaceTypeInfo(
+          icon: Icons.grain,
+          label: '砂利',
+          color: const Color(0xFF808080),
+        );
+      case SurfaceType.grass:
+        return _SurfaceTypeInfo(
+          icon: Icons.grass,
+          label: '芝生',
+          color: AppColors.park,
+        );
+      case SurfaceType.ground:
+        return _SurfaceTypeInfo(
+          icon: Icons.landscape,
+          label: '地面',
+          color: const Color(0xFFA0522D),
+        );
+      case SurfaceType.unknown:
+        return _SurfaceTypeInfo(
+          icon: Icons.help_outline,
+          label: '不明',
+          color: AppColors.textSecondary,
+        );
+    }
+  }
+}
+
+/// 路面タイプ情報
+class _SurfaceTypeInfo {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  _SurfaceTypeInfo({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 }

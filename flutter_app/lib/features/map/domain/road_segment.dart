@@ -1,5 +1,15 @@
 import 'package:latlong2/latlong.dart';
 
+/// 路面タイプ
+enum SurfaceType {
+  paved,      // 舗装路（アスファルト、コンクリート）
+  unpaved,    // 未舗装路（土）
+  gravel,     // 砂利
+  grass,      // 芝生
+  ground,     // 地面
+  unknown,    // 不明
+}
+
 /// 道路セグメントを表すエンティティ
 class RoadSegment {
   final String id;
@@ -74,6 +84,43 @@ class RoadSegment {
   /// 公園内の道路かどうか
   bool get isParkPath {
     return highway == 'footway' || highway == 'path' || highway == 'cycleway';
+  }
+
+  /// 路面タイプを取得
+  SurfaceType get surfaceType {
+    final surface = tags?['surface'] as String?;
+    if (surface == null) {
+      // surfaceタグがない場合はhighwayタイプから推定
+      if (highway == 'path' || highway == 'footway') {
+        return SurfaceType.unpaved;
+      }
+      return SurfaceType.paved; // デフォルトは舗装路
+    }
+
+    // OSMのsurfaceタグを分類
+    switch (surface.toLowerCase()) {
+      case 'paved':
+      case 'asphalt':
+      case 'concrete':
+        return SurfaceType.paved;
+      case 'unpaved':
+      case 'compacted':
+      case 'dirt':
+      case 'earth':
+        return SurfaceType.unpaved;
+      case 'gravel':
+      case 'pebblestone':
+      case 'fine_gravel':
+        return SurfaceType.gravel;
+      case 'grass':
+      case 'grass_paver':
+        return SurfaceType.grass;
+      case 'ground':
+      case 'sand':
+        return SurfaceType.ground;
+      default:
+        return SurfaceType.unknown;
+    }
   }
 }
 
