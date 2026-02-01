@@ -5,7 +5,12 @@ import 'core/theme/app_theme.dart';
 
 /// アプリケーションのルートウィジェット
 class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+  final String initialLocation;
+
+  const MyApp({
+    super.key,
+    required this.initialLocation,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -13,7 +18,7 @@ class MyApp extends ConsumerWidget {
       title: 'Non-Stop Run',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: AppRouter.router,
+      routerConfig: AppRouter.createRouter(initialLocation: initialLocation),
     );
   }
 }

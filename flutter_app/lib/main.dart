@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ステータスバーのスタイル設定
@@ -21,9 +22,14 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Check if onboarding is complete
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+  final initialLocation = onboardingComplete ? '/home' : '/onboarding';
+
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      child: MyApp(initialLocation: initialLocation),
     ),
   );
 }
