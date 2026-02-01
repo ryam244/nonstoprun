@@ -326,19 +326,64 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                           ),
                           child: CourseCard(
                             course: _courses[index],
+                            isSelected: _selectedCourseIndex == index,
                             onTap: () {
-                              // ナビゲーション画面に遷移
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NavigationScreen(
-                                    course: _courses[index],
-                                  ),
-                                ),
+                              // タップでページを変更（選択）
+                              _pageController.animateToPage(
+                                index,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
                               );
                             },
                           ),
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingMd),
+
+                  // 確認ボタン
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingMd,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => NavigationScreen(
+                                course: _courses[_selectedCourseIndex],
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTheme.spacingMd,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_circle, size: 24),
+                            const SizedBox(width: AppTheme.spacingSm),
+                            Text(
+                              'このコースで開始',
+                              style: AppTypography.headline.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppTheme.spacingMd),

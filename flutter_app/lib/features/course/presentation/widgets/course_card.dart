@@ -10,11 +10,13 @@ import 'elevation_chart.dart';
 class CourseCard extends StatelessWidget {
   final Course course;
   final VoidCallback onTap;
+  final bool isSelected;
 
   const CourseCard({
     super.key,
     required this.course,
     required this.onTap,
+    this.isSelected = false,
   });
 
   @override
@@ -25,10 +27,18 @@ class CourseCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: isSelected
+              ? Border.all(
+                  color: AppColors.primary,
+                  width: 3,
+                )
+              : null,
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadow.withValues(alpha: 0.15),
-              blurRadius: 20,
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.3)
+                  : AppColors.shadow.withValues(alpha: 0.15),
+              blurRadius: isSelected ? 25 : 20,
               offset: const Offset(0, 4),
             ),
           ],

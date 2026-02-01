@@ -137,6 +137,31 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
               traveledPath: navigationState.traveledPath,
             ),
 
+            // 戻るボタン（準備状態のみ表示）
+            if (navigationState.status == NavigationStatus.ready)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'コース選択に戻る',
+                  ),
+                ),
+              ),
+
             // ルート逸脱アラート
             if (navigationState.isOffRoute && navigationState.status == NavigationStatus.running)
               const Positioned(
