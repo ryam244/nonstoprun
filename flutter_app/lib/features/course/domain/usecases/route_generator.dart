@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../map/domain/traffic_signal.dart';
 import '../../../map/domain/road_segment.dart';
@@ -121,11 +122,14 @@ class RouteGenerator {
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
     final surfaceRatios = _calculateSurfaceRatios(usedRoads);
+    final actualDistance = _calculateRouteDistance(coordinates);
+
+    debugPrint('🏃 公園ルート生成: 目標=${distanceKm.toStringAsFixed(2)}km, 実際=${actualDistance.toStringAsFixed(2)}km');
 
     return Course(
       id: 'park-route',
       name: '信号$signalCount回！公園メインの快適${distanceKm.toStringAsFixed(1)}km',
-      distance: _calculateRouteDistance(coordinates),
+      distance: actualDistance,
       signalCount: signalCount,
       greenRatio: greenRatio,
       elevationGain: 15, // TODO: 実際の標高データから計算
@@ -158,11 +162,14 @@ class RouteGenerator {
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
     final surfaceRatios = _calculateSurfaceRatios(usedRoads);
+    final actualDistance = _calculateRouteDistance(coordinates);
+
+    debugPrint('🌳 緑道ルート生成: 目標=${distanceKm.toStringAsFixed(2)}km, 実際=${actualDistance.toStringAsFixed(2)}km');
 
     return Course(
       id: 'greenway-route',
       name: '緑道中心！快適な${distanceKm.toStringAsFixed(1)}km',
-      distance: _calculateRouteDistance(coordinates),
+      distance: actualDistance,
       signalCount: signalCount,
       greenRatio: greenRatio,
       elevationGain: 25,
@@ -195,11 +202,14 @@ class RouteGenerator {
     final signalCount = _countSignalsNearRoute(coordinates, signals);
     final greenRatio = _calculateGreenRatio(coordinates, parks);
     final surfaceRatios = _calculateSurfaceRatios(usedRoads);
+    final actualDistance = _calculateRouteDistance(coordinates);
+
+    debugPrint('📏 フラットルート生成: 目標=${distanceKm.toStringAsFixed(2)}km, 実際=${actualDistance.toStringAsFixed(2)}km');
 
     return Course(
       id: 'flat-route',
       name: '完全フラットな${distanceKm.toStringAsFixed(1)}km',
-      distance: _calculateRouteDistance(coordinates),
+      distance: actualDistance,
       signalCount: signalCount,
       greenRatio: greenRatio,
       elevationGain: 5,
@@ -232,7 +242,10 @@ class RouteGenerator {
     int maxIterations = 100;
     int iterations = 0;
 
-    while (accumulatedDistance < targetDistanceKm && iterations < maxIterations) {
+    // 往路は目標距離の約45%まで（戻り道を考慮）
+    final halfTargetDistance = targetDistanceKm * 0.45;
+
+    while (accumulatedDistance < halfTargetDistance && iterations < maxIterations) {
       iterations++;
 
       // 現在地から最も近い未使用の道路を見つける
@@ -258,19 +271,23 @@ class RouteGenerator {
 
       if (nextRoad == null) break;
 
+      // 次の道路を追加すると目標を大幅に超える場合はスキップ
+      if (accumulatedDistance + nextRoad.lengthKm > halfTargetDistance * 1.3) {
+        break;
+      }
+
       // 道路の座標を追加
       coordinates.addAll(nextRoad.coordinates);
       accumulatedDistance += nextRoad.lengthKm;
       currentPosition = nextRoad.coordinates.last;
       usedRoadIds.add(nextRoad.id);
       usedRoads.add(nextRoad);
-
-      // 目標距離の120%を超えたら終了
-      if (accumulatedDistance > targetDistanceKm * 1.2) break;
     }
 
-    // スタート地点に戻る
+    // スタート地点に戻る（復路）
     if (coordinates.isNotEmpty && coordinates.last != center) {
+      final returnDistance = _calculateDistance(currentPosition, center);
+      accumulatedDistance += returnDistance;
       coordinates.add(center);
     }
 
@@ -399,11 +416,14 @@ class RouteGenerator {
     }
 
     final signalCount = _countSignalsNearRoute(coordinates, signals);
+    final actualDistance = _calculateRouteDistance(coordinates);
+
+    debugPrint('⭕ 円形ルート生成(${routeType.name}): 目標=${distanceKm.toStringAsFixed(2)}km, 実際=${actualDistance.toStringAsFixed(2)}km');
 
     return Course(
       id: '${routeType.name}-route',
       name: _getCourseName(routeType, distanceKm, signalCount),
-      distance: distanceKm,
+      distance: actualDistance, // 実際の計算距離を使用
       signalCount: signalCount,
       greenRatio: _getDefaultGreenRatio(routeType),
       elevationGain: _getDefaultElevationGain(routeType),
