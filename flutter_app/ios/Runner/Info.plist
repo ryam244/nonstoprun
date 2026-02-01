@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>MBXAccessToken</key>
+	<string>pk.eyJ1IjoiZGl2bWUiLCJhIjoiY21rdXRsZ3I2MmE0ZjNmb2Zvd2N6eDcyZiJ9.Rv_rA41ku6PwfNgOuX7OjA</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ランニング中のナビゲーションのために、位置情報が必要です。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
