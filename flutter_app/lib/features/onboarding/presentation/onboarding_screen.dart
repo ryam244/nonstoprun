@@ -229,7 +229,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             '信号のないランニングコースを\n見つけよう',
             style: AppTypography.title2.copyWith(
-              color: AppColors.textPrimary,
+              color: AppColors.text,
             ),
             textAlign: TextAlign.center,
           ),
@@ -323,7 +323,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               Text(
                 title,
                 style: AppTypography.headline.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppColors.text,
                 ),
               ),
               const SizedBox(height: AppTheme.spacingXs),
@@ -378,7 +378,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             '現在地からのルート検索には\n位置情報の許可が必要です',
             style: AppTypography.title3.copyWith(
-              color: AppColors.textPrimary,
+              color: AppColors.text,
             ),
             textAlign: TextAlign.center,
           ),
@@ -468,7 +468,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             'さあ、信号のない快適な\nランニングを始めましょう',
             style: AppTypography.title2.copyWith(
-              color: AppColors.textPrimary,
+              color: AppColors.text,
             ),
             textAlign: TextAlign.center,
           ),
