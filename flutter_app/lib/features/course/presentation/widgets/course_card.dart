@@ -23,7 +23,7 @@ class CourseCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.background.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           boxShadow: [
             BoxShadow(

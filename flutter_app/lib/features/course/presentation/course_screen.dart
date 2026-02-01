@@ -114,21 +114,105 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     super.dispose();
   }
 
+  /// プログレスステップを表示するウィジェット
+  Widget _buildProgressStep(String label, bool isComplete) {
+    return Row(
+      children: [
+        Icon(
+          isComplete ? Icons.check_circle : Icons.radio_button_unchecked,
+          size: 20,
+          color: isComplete ? AppColors.success : AppColors.textTertiary,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTypography.body.copyWith(
+              color: isComplete ? AppColors.text : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // コースが生成されていない場合はローディング表示
     if (_courses.isEmpty) {
       return Scaffold(
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text('${widget.distance.toStringAsFixed(1)} kmのコース'),
+          backgroundColor: AppColors.background,
+          elevation: 0,
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('コースを生成中...'),
+              // スタイリッシュなローディングアニメーション
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.directions_run,
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'コースを生成中...',
+                style: AppTypography.headline.copyWith(
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '信号のない最適なルートを探しています',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              // プログレスステップ表示
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: Column(
+                  children: [
+                    _buildProgressStep('📍 位置情報を取得', true),
+                    const SizedBox(height: 8),
+                    _buildProgressStep('🚦 信号データを収集', true),
+                    const SizedBox(height: 8),
+                    _buildProgressStep('🗺️ ルートを計算', true),
+                    const SizedBox(height: 8),
+                    _buildProgressStep('📊 高低差を分析', false),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

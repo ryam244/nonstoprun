@@ -20,7 +20,7 @@ class NavigationStats extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.85), // 半透過に変更
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

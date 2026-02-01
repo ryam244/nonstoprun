@@ -79,10 +79,17 @@ class _MapViewState extends ConsumerState<MapView> {
             currentLocation.latitude,
           ),
         ),
-        zoom: 14.0,
+        zoom: 16.0, // ランニング・徒歩に最適なズームレベルに変更
       ),
       onMapCreated: (MapboxMap mapboxMap) async {
         _mapboxMap = mapboxMap;
+
+        // 日本語ラベルを設定
+        try {
+          await mapboxMap.setLanguage(['ja']);
+        } catch (e) {
+          debugPrint('Failed to set map language: $e');
+        }
 
         // Annotation Managerを初期化
         _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
@@ -116,31 +123,33 @@ class _MapViewState extends ConsumerState<MapView> {
     await _circleAnnotationManager!.create(circleAnnotation);
   }
 
-  /// 信号マーカーを追加
+  /// 信号マーカーを追加（赤い円で表示）
   Future<void> _addTrafficSignalMarkers() async {
-    if (_pointAnnotationManager == null) return;
+    if (_circleAnnotationManager == null) return;
 
     final trafficSignalState = ref.read(trafficSignalProvider);
     final signals = trafficSignalState.signals;
 
     if (signals.isEmpty) return;
 
-    // 各信号にマーカーを追加
-    final annotations = signals.map((signal) {
-      return PointAnnotationOptions(
+    // 各信号に赤い円マーカーを追加
+    for (final signal in signals) {
+      final circleAnnotation = CircleAnnotationOptions(
         geometry: Point(
           coordinates: Position(
             signal.location.longitude,
             signal.location.latitude,
           ),
         ),
-        iconImage: 'traffic-signal-icon',
-        iconSize: 0.5,
-        iconColor: AppColors.trafficSignal.toARGB32(),
+        circleRadius: 6.0, // 小さめの円
+        circleColor: AppColors.trafficSignal.toARGB32(), // 赤色
+        circleStrokeWidth: 2.0,
+        circleStrokeColor: Colors.white.toARGB32(), // 白枠
+        circleOpacity: 0.9,
       );
-    }).toList();
 
-    await _pointAnnotationManager!.createMulti(annotations);
+      await _circleAnnotationManager!.create(circleAnnotation);
+    }
   }
 
   /// コースルートを描画（全コースを同時に色違いで表示）

@@ -15,10 +15,32 @@ class NavigationControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // スタートボタンのみの場合はセンタリング
+    if (navigationState.status == NavigationStatus.ready) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.85), // 半透過に変更
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: _buildMainButton(context, ref),
+        ),
+      );
+    }
+
+    // それ以外の場合は従来のレイアウト
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.85), // 半透過に変更
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -43,10 +65,6 @@ class NavigationControls extends ConsumerWidget {
 
           // 開始/一時停止/再開ボタン
           _buildMainButton(context, ref),
-
-          // 空のスペース（レイアウトバランス用）
-          if (navigationState.status == NavigationStatus.ready)
-            const SizedBox(width: 64),
         ],
       ),
     );
